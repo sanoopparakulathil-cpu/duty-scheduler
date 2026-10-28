@@ -17,6 +17,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - uses: android-actions/setup-android@v3
       - run: node tests/test.js
       - name: Prepare web assets
         run: mkdir -p www && cp index.html style.css app.js logic.js sites.js manifest.json sw.js icon-192.png icon-512.png www/
@@ -25,8 +26,14 @@ jobs:
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
-      - run: cp android/app/build/outputs/apk/debug/app-debug.apk DutyScheduler.apk
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Locate APK
+        run: |
+          find android -name "*.apk"
+          cp "$(find android -name 'app-debug.apk' | head -1)" DutyScheduler.apk
+          ls -l DutyScheduler.apk
       - uses: actions/upload-artifact@v4
         with:
           name: DutyScheduler-apk

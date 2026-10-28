@@ -19,7 +19,7 @@ jobs:
           java-version: 17
       - run: node tests/test.js
       - name: Prepare web assets
-        run: mkdir -p www && cp index.html style.css app.js logic.js manifest.json sw.js icon-192.png icon-512.png www/
+        run: mkdir -p www && cp index.html style.css app.js logic.js sites.js manifest.json sw.js icon-192.png icon-512.png www/
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android

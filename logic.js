@@ -21,12 +21,7 @@ function seed(){
       T('ibrahim','Ibrahim','','SA','atifp'),T('bader','Bader','','SA','umer'),T('abdullah','Abdullah','','SA','sakthivel')],
     other:[{name:'Umar Shafiq',project:'Qiddiya'},{name:'Syed Kawish',project:'Six Flags'}],
     avail:{},duties:{},sched:{},hrs:{},hrsType:{},hol:[],opt:{override:false},
-    lib:[{code:'AMC-80012',site:'Spark Logistics',loc:'Dammam',act:'AMC (FA & FF)',shift:'DAY',crew:2},
-         {code:'',site:'Synthomer',loc:'Dammam 2',act:'AMC (FA & FF)',shift:'DAY',crew:2},
-         {code:'',site:'Synthomer',loc:'Dammam 2',act:'On-Call',shift:'ONCALL',crew:2},
-         {code:'',site:'Kanoo Tower',loc:'Dammam',act:'AMC (FA)',shift:'DAY',crew:2},
-         {code:'AMC-60134',site:'Jotun Powder Coatings',loc:'Dammam 2',act:'AMC (FA & FF)',shift:'DAY',crew:2},
-         {code:'AMC-70044',site:'MEBCO',loc:'Dammam 2',act:'AMC (FA)',shift:'DAY',crew:1}]};
+    lib:[]};
 }
 const tech=(S,id)=>S.team.find(t=>t.id===id);
 function autoType(S,date){ if(S.hol.includes(date))return 'holiday'; const w=dow(date); return w===5?'friday':w===6?'saturday':'normal'; }

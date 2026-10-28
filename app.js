@@ -3,7 +3,7 @@
 const D=window.DL, KEY='dutyv1', $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const todayStr=()=>D.ymd(new Date());
-let S=load(), tab='today', cur=todayStr(), cycle=D.cycleStart(todayStr()), filter='all', sheetFn=null, form={}, applyN=0;
+let S=load(), tab='today', cur=todayStr(), cycle=D.cycleStart(todayStr()), filter='all', sheetFn=null, form={}, applyN=0, libq='';
 function load(){ try{ const j=JSON.parse(localStorage.getItem(KEY)); if(j&&j.v===1){ const sd=D.seed(); for(const k in sd) if(!(k in j)) j[k]=sd[k]; return j; } }catch(e){} return D.seed(); }
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 function commit(){ save(); render(); if(sheetFn) paintSheet(); }
@@ -101,12 +101,26 @@ function sDuty(){
   <label class="f">Crew size</label><div class="seg">${[1,2,3].map(n=>`<button class="${f.crew===n?'on':''}" data-act="dfset" data-k="crew" data-v="${n}">${n}</button>`).join('')}</div>
   <div class="bar">${f.id?`<button class="btn red" data-act="delduty">Delete</button>`:''}<button class="btn" data-act="saveduty">Save</button></div>`;
 }
+function libHtml(){
+  const q=libq.trim().toLowerCase(); let n=0, h='';
+  S.lib.forEach((l,i)=>{ if(q&&!([l.code,l.site,l.loc,l.act].join(' ').toLowerCase().includes(q)))return; n++;
+    h+=`<div class="trow"><div class="sp" data-act="addlib" data-i="${i}"><b>${esc(l.site||l.code)}</b><div class="sub">${esc([l.code,l.loc,l.act].filter(Boolean).join(' · '))} · ${l.shift==='DAY'?'Day':'On-Call'} · ${l.crew}</div></div><button class="btn sec sm" data-act="rmlib" data-i="${i}">✕</button></div>`; });
+  return n?h:`<div class="empty">${S.lib.length?'No match':'No saved sites. Upload your AMC / GMC list below.'}</div>`;
+}
 function sAdd(){
   const prev=prevDuties();
-  let h=`<h3>Add site</h3><div class="bar"><button class="btn" data-act="newduty">＋ New site</button>${prev?`<button class="btn sec" data-act="copyprev">Copy ${D.fmt(prev.date)}</button>`:''}</div><div class="gh">Saved sites · tap to add</div>`;
-  if(!S.lib.length) h+=`<div class="empty">No saved sites</div>`;
-  S.lib.forEach((l,i)=>h+=`<div class="trow"><div class="sp" data-act="addlib" data-i="${i}"><b>${esc(l.site||l.code)}</b><div class="sub">${esc([l.code,l.loc,l.act].filter(Boolean).join(' · '))} · ${l.shift==='DAY'?'Day':'On-Call'} · ${l.crew}</div></div><button class="btn sec sm" data-act="rmlib" data-i="${i}">✕</button></div>`);
-  return h;
+  return `<h3>Add site</h3><div class="bar"><button class="btn" data-act="newduty">＋ New site</button>${prev?`<button class="btn sec" data-act="copyprev">Copy ${D.fmt(prev.date)}</button>`:''}</div>
+  <label class="f">Upload AMC / GMC list (.xlsx or .csv)</label><input type="file" accept=".xlsx,.csv,.txt" data-chg="amcfile">
+  <div class="gh">AMC / GMC sites · ${S.lib.length} · tap to add</div><input data-q="1" placeholder="Search site, code, location" value="${esc(libq)}"><div class="card" id="liblist">${libHtml()}</div>`;
+}
+function sImport(){
+  const im=form.imp, t=im.tbl, opts=(sel)=>`<option value="-1">— none —</option>`+t.header.map((h,i)=>`<option value="${i}" ${sel===i?'selected':''}>${esc(h||'Column '+(i+1))}</option>`).join('');
+  const list=D.libFromTable(t,im.map,im.crew), field=[['code','AMC / GMC no.'],['site','Site / client'],['loc','Location'],['act','Activity / system'],['crew','Crew size (optional)'],['shift','Shift (optional)']];
+  return `<h3>Import AMC / GMC list</h3><div class="sub">${esc(im.name)} · ${t.body.length} rows · check the columns</div>`+
+   field.map(([k,l])=>`<label class="f">${l}</label><select data-chg="impmap" data-k="${k}">${opts(im.map[k])}</select>`).join('')+
+   `<label class="f">Default crew size</label><div class="seg">${[1,2,3].map(n=>`<button class="${im.crew===n?'on':''}" data-act="impcrew" data-v="${n}">${n}</button>`).join('')}</div>
+   <div class="gh">Preview · ${list.length} sites</div><div class="card">${list.slice(0,4).map(l=>`<div class="trow"><div class="sp"><b>${esc(l.site||l.code)}</b><div class="sub">${esc([l.code,l.loc,l.act].filter(Boolean).join(' · '))} · ${l.shift==='DAY'?'Day':'On-Call'} · ${l.crew}</div></div></div>`).join('')||'<div class="empty">Nothing to import. Pick the Site column.</div>'}</div>
+   <div class="bar"><button class="btn sec" data-act="doimport" data-replace="1" ${list.length?'':'disabled'}>Replace list</button><button class="btn" data-act="doimport" ${list.length?'':'disabled'}>Merge into list</button></div>`;
 }
 function prevDuties(){ for(let i=1;i<=14;i++){ const d=D.addDays(cur,-i); if((S.duties[d]||[]).length) return {date:d,list:S.duties[d]}; } return null; }
 const uid=()=>'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
@@ -200,7 +214,7 @@ function sDays(){
 /* ---------- More ---------- */
 function vMore(){
   const dates=Object.keys(S.sched).sort().reverse().slice(0,40);
-  let h=`<div class="gh">Settings</div><div class="card"><div class="sw"><span>Allow a 2nd Day site for one person (override)</span><input type="checkbox" style="width:24px;height:24px" data-chg="ovr" ${S.opt.override?'checked':''}></div></div>`;
+  let h=`<div class="gh">AMC / GMC list</div><div class="card pad"><div class="row"><b class="sp">${S.lib.length} saved sites</b>${S.lib.length?`<button class="btn sec sm" data-act="clearlib">Clear</button>`:''}</div><label class="f">Upload list (.xlsx or .csv)</label><input type="file" accept=".xlsx,.csv,.txt" data-chg="amcfile"></div><div class="gh">Settings</div><div class="card"><div class="sw"><span>Allow a 2nd Day site for one person (override)</span><input type="checkbox" style="width:24px;height:24px" data-chg="ovr" ${S.opt.override?'checked':''}></div></div>`;
   h+=`<div class="gh">Public holidays · all hours double OT</div><div class="card pad"><div class="row"><input type="date" id="holin"><button class="btn sm" data-act="addhol">Add</button></div>`+S.hol.slice().sort().map(d=>`<div class="row" style="margin-top:8px"><span class="sp">${D.fmt(d)} · ${D.WD[D.dow(d)]}</span><button class="btn sec sm" data-act="rmhol" data-d="${d}">✕</button></div>`).join('')+`</div>`;
   h+=`<div class="gh">Saved schedules</div><div class="card">`+(dates.length?dates.map(d=>`<div class="trow" data-act="opendate" data-d="${d}"><div class="sp"><b>${D.fmt(d)}</b> <span class="sub">${D.WD[D.dow(d)]}</span></div><span class="chip ${S.sched[d].status}">${S.sched[d].status}</span></div>`).join(''):'<div class="empty">None yet</div>')+`</div>`;
   h+=`<div class="gh">Backup</div><div class="card pad"><div class="bar" style="margin:0"><button class="btn sec" data-act="backup">Export backup</button></div><label class="f">Restore from backup file</label><input type="file" accept=".json" data-chg="import"></div>`;
@@ -281,11 +295,14 @@ const A={
  newduty(){ form.duty={id:null,site:'',code:'',loc:'',act:'',shift:'DAY',crew:2}; openSheet(sDuty); },
  editduty(el){ const d=(S.duties[cur]||[]).find(x=>x.id===el.dataset.id); form.duty=Object.assign({},d); openSheet(sDuty); },
  dfset(el){ const k=el.dataset.k; form.duty[k]=k==='crew'?+el.dataset.v:el.dataset.v; paintSheet(); },
- saveduty(){ const f=form.duty; if(!(f.site||f.code).trim()) return toast('Enter a site name'); const list=S.duties[cur]=S.duties[cur]||[];
+ saveduty(){ const f=form.duty; if(!(f.site||f.code).trim()) return toast('Enter a site name'); if(!f.code) f.code=D.codeFor(S,f.site); const list=S.duties[cur]=S.duties[cur]||[];
    if(f.id){ const i=list.findIndex(x=>x.id===f.id); list[i]=Object.assign({},f); } else { f.id=uid(); list.push(Object.assign({},f)); if(!S.lib.some(l=>l.site===f.site&&l.shift===f.shift&&l.act===f.act)) S.lib.push({code:f.code,site:f.site,loc:f.loc,act:f.act,shift:f.shift,crew:f.crew}); }
    afterDutyChange(); closeSheet(); commit(); },
  delduty(){ const f=form.duty; S.duties[cur]=(S.duties[cur]||[]).filter(x=>x.id!==f.id); afterDutyChange(); closeSheet(); commit(); },
  addlib(el){ const l=S.lib[+el.dataset.i]; (S.duties[cur]=S.duties[cur]||[]).push(Object.assign({id:uid()},l)); closeSheet(); commit(); toast('Site added'); },
+ impcrew(el){ form.imp.crew=+el.dataset.v; paintSheet(); },
+ doimport(el){ const im=form.imp, list=D.libFromTable(im.tbl,im.map,im.crew), replace=!!el.dataset.replace; if(replace&&!confirm('Replace the whole saved site list with '+list.length+' sites?')) return; const m=D.mergeLib(S.lib,list,replace); S.lib=Array.from(m); closeSheet(); commit(); toast(replace?list.length+' sites saved':(m.added||0)+' new sites added'); },
+ clearlib(){ if(confirm('Delete the saved AMC / GMC list?')){ S.lib=[]; commit(); } },
  rmlib(el){ S.lib.splice(+el.dataset.i,1); commit(); },
  copyprev(){ const p=prevDuties(); S.duties[cur]=(S.duties[cur]||[]).concat(p.list.map(d=>Object.assign({},d,{id:uid()}))); closeSheet(); commit(); toast('Copied '+D.fmt(p.date)); },
  filter(el){ filter=el.dataset.v; render(); },
@@ -311,7 +328,7 @@ const A={
  reset(){ if(confirm('Delete ALL schedules, availability and hours on this phone?')){ S=D.seed(); commit(); toast('Data reset'); } }
 };
 document.addEventListener('click',e=>{ const el=e.target.closest('[data-act]'); if(el&&A[el.dataset.act]){ e.preventDefault(); A[el.dataset.act](el); return; } if(e.target.id==='backdrop') closeSheet(); const nb=e.target.closest('nav button'); if(nb){ tab=nb.dataset.tab; window.scrollTo(0,0); render(); } });
-document.addEventListener('input',e=>{ const f=e.target.dataset&&e.target.dataset.f; if(f&&form.duty) form.duty[f]=e.target.value; });
+document.addEventListener('input',e=>{ if(e.target.dataset&&e.target.dataset.q){ libq=e.target.value; const l=$('#liblist'); if(l) l.innerHTML=libHtml(); return; } const f=e.target.dataset&&e.target.dataset.f; if(f&&form.duty) form.duty[f]=e.target.value; });
 document.addEventListener('change',e=>{ const k=e.target.dataset&&e.target.dataset.chg; if(!k)return; const v=e.target.value;
   if(k==='date'&&v){ cur=v; render(); }
   else if(k==='ack'){ S.sched[cur].ack=e.target.checked; commit(); }
@@ -319,9 +336,18 @@ document.addEventListener('change',e=>{ const k=e.target.dataset&&e.target.datas
   else if(k==='tname'){ if(v.trim()){ T(form.tech).name=v.trim(); commit(); } }
   else if(k==='temp'){ T(form.tech).emp=v.trim(); commit(); }
   else if(k==='dtype'){ if(v===D.autoType(S,cur)) delete S.hrsType[cur]; else S.hrsType[cur]=v; commit(); }
+  else if(k==='impmap'){ form.imp.map[e.target.dataset.k]=+v; paintSheet(); }
+  else if(k==='amcfile'){ const f=e.target.files[0]; if(f) readList(f); e.target.value=''; }
   else if(k==='ovr'){ S.opt.override=e.target.checked; commit(); }
   else if(k==='import'){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const j=JSON.parse(r.result); if(!j||j.v!==1||!j.team) throw 0; S=j; commit(); toast('Backup restored'); }catch(x){ toast('Not a valid backup file'); } }; r.readAsText(f); }
 });
+
+async function readList(f){
+  try{ let rows; const buf=new Uint8Array(await f.arrayBuffer());
+    if(/\.xlsx$/i.test(f.name)) rows=await D.readXlsx(buf); else if(/\.xls$/i.test(f.name)) return toast('Old .xls not supported. Save as .xlsx or .csv'); else rows=D.parseCSV(new TextDecoder().decode(buf));
+    const tbl=D.tableFromRows(rows); if(!tbl.body.length) return toast('No rows found in file');
+    form.imp={name:f.name,tbl,map:D.guessMap(tbl.header),crew:2}; openSheet(sImport);
+  }catch(err){ toast('Could not read file: '+(err.message||err)); } }
 
 /* ---------- auto draft 05:30 ---------- */
 function autoDraft(){ const t=todayStr(), n=new Date(); if(n.getHours()*60+n.getMinutes()<330) return; if((S.duties[t]||[]).length&&!S.sched[t]){ D.generate(S,t); commit(); toast('Auto draft created for today'); } }

@@ -224,6 +224,53 @@ function timesheetXlsx(S,R,start){
   rows.push([],[null,{v:'EXPECTED NORMAL',s:1},R.expected],[null,{v:'LEAVE DAYS',s:1},R.leaveDays],[null,{v:'SHORT BY (H)',s:1},R.short]);
   return xlsx(rows,[3,12,12,38,14,9,9,10,10,10,14]);
 }
-root.DL={pad,ymd,parse,addDays,fmt,dow,WD,LEAVE,REASONS,seed,tech,autoType,dayType,getAvail,defaultAvail,isLeave,slotKeys,dutyOf,dutyName,elig,recent,slotState,counts,generate,candidates,assign,removeSlot,finalize,reopen,stdOut,calc,toH,toS,dayRows,cycleStart,cycleEnd,shiftCycle,cycleDates,timesheet,imageRows,zip,xlsx,timesheetXlsx,utf8};
+
+/* ---------- AMC/GMC list import ---------- */
+function parseCSV(t){ t=t.replace(/^﻿/,''); const first=t.split(/\r?\n/)[0]||''; const delim=[',',';','\t'].map(d=>[d,first.split(d).length]).sort((a,b)=>b[1]-a[1])[0][0]; const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){ const c=t[i]; if(q){ if(c==='"'){ if(t[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; } else if(c==='"') q=true; else if(c===delim){row.push(f);f='';} else if(c==='\n'||c==='\r'){ if(c==='\r'&&t[i+1]==='\n')i++; row.push(f);f='';rows.push(row);row=[]; } else f+=c; }
+  if(f||row.length){row.push(f);rows.push(row);} return rows; }
+async function inflateRaw(u8){ const ds=new DecompressionStream('deflate-raw'), w=ds.writable.getWriter(); w.write(u8); w.close(); return new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+async function unzipAll(bytes){
+  const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); let e=bytes.length-22; while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--; if(e<0) throw new Error('Not an .xlsx file');
+  const n=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true); const out={};
+  for(let i=0;i<n;i++){ const method=dv.getUint16(p+10,true), csz=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), el=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), lho=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(bytes.subarray(p+46,p+46+nl)); const lnl=dv.getUint16(lho+26,true), lel=dv.getUint16(lho+28,true), st=lho+30+lnl+lel; out[name]={method,data:bytes.subarray(st,st+csz)}; p+=46+nl+el+cl; }
+  return out; }
+const unent=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,d)=>String.fromCharCode(+d)).replace(/&amp;/g,'&');
+const tOf=x=>{ let o='',m,re=/<t[^>]*>([\s\S]*?)<\/t>/g; while((m=re.exec(x)))o+=m[1]; return unent(o); };
+async function readXlsx(bytes){
+  const z=await unzipAll(bytes); const get=async n=>{ const f=z[n]; if(!f)return null; const u=f.method===0?f.data:await inflateRaw(f.data); return new TextDecoder().decode(u); };
+  const ss=[]; const sx=await get('xl/sharedStrings.xml'); if(sx){ let m,re=/<si[^>]*>([\s\S]*?)<\/si>/g; while((m=re.exec(sx))) ss.push(tOf(m[1])); }
+  let best=[]; for(const name of Object.keys(z).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n))){
+    const x=await get(name), rows=[]; let rm,rre=/<row\b[^>]*>([\s\S]*?)<\/row>/g;
+    while((rm=rre.exec(x))){ const row=[]; let cm,cre=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+      while((cm=cre.exec(rm[1]))){ const at=cm[1], body=cm[2]||''; const r=/r="([A-Z]+)\d+"/.exec(at); if(!r)continue; let ci=0; for(const ch of r[1]) ci=ci*26+ch.charCodeAt(0)-64; ci--;
+        const t=(/t="(\w+)"/.exec(at)||[])[1]; let v=''; if(t==='inlineStr') v=tOf(body); else { const vm=/<v>([\s\S]*?)<\/v>/.exec(body); v=vm?unent(vm[1]):''; if(t==='s') v=ss[+v]||''; }
+        row[ci]=String(v).trim(); }
+      rows.push(Array.from(row,x=>x||'')); }
+    if(rows.length>best.length) best=rows; }
+  return best; }
+function tableFromRows(rows){
+  let hi=0; for(let i=0;i<Math.min(10,rows.length);i++){ if(rows[i].filter(c=>c&&isNaN(+c)).length>=2){hi=i;break;} }
+  const header=(rows[hi]||[]).map(x=>String(x||'')), body=rows.slice(hi+1).filter(r=>r.some(c=>String(c||'').trim()));
+  return {header,body}; }
+function guessMap(h){
+  const L=h.map(x=>x.toLowerCase()), used=new Set(), pick=re=>{ const i=L.findIndex((x,i)=>!used.has(i)&&re.test(x)); if(i>=0)used.add(i); return i; };
+  const code=pick(/amc|gmc|contract|job|code|ref|p800|^no\b|number|^#/), site=pick(/site|client|customer|project|company|name|building/), loc=pick(/location|area|city|address|zone/), act=pick(/activity|system|scope|service|type|work/), crew=pick(/crew|tech|man|people/), shift=pick(/shift/);
+  return {code,site,loc,act,crew,shift}; }
+function libFromTable(tbl,map,defCrew){
+  const g=(r,i)=>i>=0?String(r[i]||'').trim():'', out=[];
+  for(const r of tbl.body){ const code=g(r,map.code), site=g(r,map.site); if(!code&&!site)continue; let crew=parseInt(g(r,map.crew)); if(!(crew>=1&&crew<=3)) crew=defCrew||2; const sh=g(r,map.shift).toLowerCase();
+    out.push({code,site,loc:g(r,map.loc),act:g(r,map.act),shift:/call|night/.test(sh)?'ONCALL':'DAY',crew}); }
+  return out; }
+function mergeLib(lib,list,replace){
+  if(replace) return list.slice();
+  const out=lib.slice(); let added=0;
+  for(const n of list){ const k=out.findIndex(o=>(n.code&&o.code===n.code&&o.site===n.site)||(!n.code&&o.site===n.site&&o.act===n.act&&o.shift===n.shift));
+    if(k<0){ out.push(n); added++; } else if(!out[k].code&&n.code) out[k].code=n.code; }
+  out.added=added; return out; }
+function codeFor(S,site){ if(!site)return ''; const m=S.lib.find(l=>l.site&&l.site.toLowerCase()===site.toLowerCase()&&l.code); return m?m.code:''; }
+
+root.DL={parseCSV,readXlsx,tableFromRows,guessMap,libFromTable,mergeLib,codeFor,pad,ymd,parse,addDays,fmt,dow,WD,LEAVE,REASONS,seed,tech,autoType,dayType,getAvail,defaultAvail,isLeave,slotKeys,dutyOf,dutyName,elig,recent,slotState,counts,generate,candidates,assign,removeSlot,finalize,reopen,stdOut,calc,toH,toS,dayRows,cycleStart,cycleEnd,shiftCycle,cycleDates,timesheet,imageRows,zip,xlsx,timesheetXlsx,utf8};
 if(typeof module!=='undefined')module.exports=root.DL;
 })(typeof window!=='undefined'?window:globalThis);

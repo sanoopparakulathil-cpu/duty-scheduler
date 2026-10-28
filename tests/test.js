@@ -34,3 +34,10 @@ const ts=D.timesheet(S,'2026-10-25','2026-10-28'); const R=ts.find(x=>x.t.id==='
 const x=D.timesheetXlsx(S,R,'2026-10-25'); require('fs').writeFileSync('/tmp/t.xlsx',x);
 const z=D.zip([{name:'a.txt',data:D.utf8('hello')}]); require('fs').writeFileSync('/tmp/t.zip',z);
 console.log('ALL OK');
+(async()=>{ const fs=require('fs');
+ const rows=await D.readXlsx(new Uint8Array(fs.readFileSync('/tmp/amc.xlsx'))); const t=D.tableFromRows(rows); const m=D.guessMap(t.header);
+ console.log(t.header,m); const lib=D.libFromTable(t,m,2); console.log(lib);
+ assert.equal(lib.length,3); assert.equal(lib[1].code,'70044'); assert.equal(lib[0].site,'Spark Logistics'); assert.equal(m.code,1);
+ const c=D.tableFromRows(D.parseCSV(fs.readFileSync('/tmp/amc.csv','utf8'))); const l2=D.libFromTable(c,D.guessMap(c.header),2); assert.equal(l2[0].site,'Starlink, Riyadh'); assert.equal(l2[0].code,'80016');
+ const S2=D.seed(); const merged=D.mergeLib(S2.lib,lib); console.log('merged',merged.length,merged.added);
+ console.log('IMPORT OK'); })().catch(e=>{console.error(e);process.exit(1)});

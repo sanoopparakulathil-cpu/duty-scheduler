@@ -18,17 +18,27 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
-      - run: node tests/test.js
+      - name: Tests
+        run: node tests/test.js 2>&1 | tee -a /tmp/build.log; exit ${PIPESTATUS[0]}
       - name: Prepare web assets
         run: mkdir -p www && cp index.html style.css app.js logic.js sites.js manifest.json sw.js icon-192.png icon-512.png www/
-      - run: npm install
-      - run: npx cap add android
-      - run: npx cap sync android
+      - name: Capacitor
+        run: |
+          set -o pipefail
+          (npm install && npx cap add android && npx cap sync android) 2>&1 | tee -a /tmp/build.log
       - name: Build debug APK
         working-directory: android
         run: |
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a /tmp/build.log
+      - name: Push log on failure
+        if: failure()
+        run: |
+          mkdir /tmp/lg && cp /tmp/build.log /tmp/lg/build.log
+          cd /tmp/lg && git init -q -b buildlog && git config user.email a@b.c && git config user.name ci
+          tail -c 60000 build.log > b && mv b build.log
+          git add . && git commit -qm log && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" buildlog
       - name: Locate APK
         run: |
           find android -name "*.apk"

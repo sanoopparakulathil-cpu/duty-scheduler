@@ -1,17 +1,39 @@
 window.GSSC_SITES=[
 {
 "kind": "AMC",
-"code": "AMC-80048",
-"site": "ABP Tower",
+"tag": "Oct",
+"code": "AMC-70119",
+"site": "Al Salah Tower Khobar",
 "loc": "",
-"act": "FA, FF & FM200",
+"act": "FA & FF",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
-"code": "AMC-80049",
-"site": "ABP Residence",
+"tag": "Oct",
+"code": "AMC-70120",
+"site": "Al Salah Building Rakah",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-70098",
+"site": "Honeywell Dammam",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-70077",
+"site": "Honeywell Dhahran",
 "loc": "",
 "act": "FF",
 "shift": "DAY",
@@ -19,8 +41,9 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80050",
-"site": "ATC",
+"tag": "Oct",
+"code": "AMC-70076",
+"site": "Honeywell Jubail",
 "loc": "",
 "act": "FA & FF",
 "shift": "DAY",
@@ -28,8 +51,9 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80029",
-"site": "Al Rabiyah Tower",
+"tag": "Oct",
+"code": "AMC-70080",
+"site": "Honeywell Dammam SA50",
 "loc": "",
 "act": "FA & FF",
 "shift": "DAY",
@@ -37,44 +61,39 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80019",
-"site": "Tabuk Pharmaceuticals",
+"tag": "Oct",
+"code": "AMC-80037",
+"site": "Henkel Accommodation",
 "loc": "",
-"act": "FA, FF & FM200",
+"act": "FA, FF, Emergency & Exit Lights",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
-"code": "AMC-70020",
-"site": "Al Rumaih Co. - Al Shaik Tower",
+"tag": "Oct",
+"code": "AMC-80036",
+"site": "Henkel Plant 1",
 "loc": "",
-"act": "FA & FF",
+"act": "FA, FF, Emergency & Exit Lights",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
-"code": "AMC-70021",
-"site": "MDS Computer Systems (Al Rumaih)",
+"tag": "Oct",
+"code": "AMC-70115",
+"site": "Jotun",
 "loc": "",
-"act": "FA & FF",
+"act": "FA, FF, FM200, Novec 1230 & CO2",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
-"code": "AMC-80026",
-"site": "Emkan Holding",
-"loc": "",
-"act": "FA & FE",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80057",
-"site": "Al Rumaih Wh",
+"tag": "Oct",
+"code": "AMC-80025",
+"site": "Tariq Hajj Architects",
 "loc": "",
 "act": "FA & FF",
 "shift": "DAY",
@@ -82,44 +101,9 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-70122",
-"site": "EFS Schlumberger Spark",
-"loc": "",
-"act": "FA, FF, Novec 1230 & Vesda",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-70056",
-"site": "Al Anwar Arts Trading",
-"loc": "",
-"act": "FA, FF & CCTV",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-70108",
-"site": "Modern Adhesive Products",
-"loc": "",
-"act": "FA, FF & Foam",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80015",
-"site": "Servcorp",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-70037",
-"site": "Nestle Motor Pool",
+"tag": "Oct",
+"code": "AMC-70085",
+"site": "DRIC",
 "loc": "",
 "act": "FA & FF",
 "shift": "DAY",
@@ -128,8 +112,9 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80073",
-"site": "Cisco (EFS) – Alshaikh Tower, Al Khobar",
+"tag": "Oct",
+"code": "AMC-70026",
+"site": "Domus Jubail",
 "loc": "",
 "act": "FA & FF",
 "shift": "DAY",
@@ -137,8 +122,100 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-70090",
-"site": "ENGIE Solutions",
+"tag": "Oct",
+"code": "AMC-70105",
+"site": "Al Hajri Tower",
+"loc": "",
+"act": "FA, FF, FM200 & CCTV",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-70126",
+"site": "Rawabi Cetco",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"note": "On Hold"
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-60142",
+"site": "Al Hayat Carpet",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-70061",
+"site": "Hydratight Jubail",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80043",
+"site": "Hydratight Khobar",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-70109",
+"site": "SPTC",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80016",
+"site": "Star Links Agility Wh 2 & 14",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80017",
+"site": "Star Links Stockyard Wh",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-60139",
+"site": "Em Sherif Cafe",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80023",
+"site": "Saudi German Co. - Main Plant",
 "loc": "",
 "act": "FA, FF & Fire Suppression",
 "shift": "DAY",
@@ -146,17 +223,9 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-70116",
-"site": "New Horizons Contracting",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80012",
-"site": "Spark Logistics",
+"tag": "Oct",
+"code": "AMC-80024",
+"site": "Saudi German Co. - Wh",
 "loc": "",
 "act": "FA, FF & Fire Suppression",
 "shift": "DAY",
@@ -164,169 +233,38 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-70054",
-"site": "M Executive Hotel",
-"loc": "",
-"act": "FA, FF & KH",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-70124",
-"site": "Pall Arabia for Trading",
-"loc": "",
-"act": "FA & FE",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80033",
-"site": "Tad Logistics",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80011",
-"site": "Nestle Factory",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80018",
-"site": "Movenpick Hotel",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80005",
-"site": "Total Energies",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-70079",
-"site": "Honeywell Spark",
-"loc": "",
-"act": "FA, FF & FM200",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-70107",
-"site": "Bayfront",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80069",
-"site": "GS Packaging",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80059",
-"site": "Zamil Group Real Estate - Murjan Village",
-"loc": "",
-"act": "FF & KH",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "R80002",
-"site": "Star Links - Sulay Wh",
-"loc": "",
-"act": "FA, FF & FE",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80065",
-"site": "Hala Supply Chain Services",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80063",
-"site": "Ittefaq Steel Accommodation",
-"loc": "",
-"act": "FA & FF",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80071",
-"site": "TAQA EFSIM",
-"loc": "",
-"act": "FA, FF & FM200",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
-"code": "AMC-80062",
-"site": "Al Suwaiket Wh",
-"loc": "",
-"act": "FA, FF, Gas Suppression, Emergency & Exit Lights",
-"shift": "DAY",
-"crew": 2
-},
-{
-"kind": "AMC",
+"tag": "Oct",
 "code": "AMC-70058",
 "site": "TSSP Plant",
 "loc": "",
-"act": "FA, FF, Fire Suppression & FE",
+"act": "FE",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
+"tag": "Oct",
 "code": "AMC-70058",
 "site": "TSSP Bending",
 "loc": "",
-"act": "FA, FF, Fire Suppression & FE",
+"act": "FE",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
+"tag": "Oct",
 "code": "AMC-70058",
 "site": "TSSP Housing",
 "loc": "",
-"act": "FA, FF, Fire Suppression & FE",
+"act": "FE",
 "shift": "DAY",
 "crew": 2
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Tower",
 "loc": "",
 "act": "FA & FF",
@@ -335,7 +273,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Machinery",
 "loc": "",
 "act": "FA & FF",
@@ -344,7 +283,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Oil and Gas",
 "loc": "",
 "act": "FA & FF",
@@ -353,7 +293,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Power Industry",
 "loc": "",
 "act": "FA & FF",
@@ -362,7 +303,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Jubail",
 "loc": "",
 "act": "FA & FF",
@@ -371,7 +313,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Ras Tanura",
 "loc": "",
 "act": "FA & FF",
@@ -380,7 +323,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo W/7",
 "loc": "",
 "act": "FA & FF",
@@ -389,7 +333,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo WH8",
 "loc": "",
 "act": "FA & FF",
@@ -398,7 +343,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Prime Market",
 "loc": "",
 "act": "FA & FF",
@@ -407,7 +353,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Airlines",
 "loc": "",
 "act": "FA & FF",
@@ -416,7 +363,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Thubashi",
 "loc": "",
 "act": "FA & FF",
@@ -425,7 +373,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Terminal-1",
 "loc": "",
 "act": "FA & FF",
@@ -434,7 +383,8 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
-"code": "AMC-80035",
+"tag": "Oct",
+"code": "AMC-60039",
 "site": "Kanoo Terminal-2",
 "loc": "",
 "act": "FA & FF",
@@ -443,6 +393,7 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
+"tag": "Oct",
 "code": "AMC-80004",
 "site": "DSV",
 "loc": "",
@@ -452,6 +403,7 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
+"tag": "Oct",
 "code": "PO 171581",
 "site": "IKEA Khobar (Monthly Service)",
 "loc": "",
@@ -461,6 +413,7 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
+"tag": "Oct",
 "code": "PO 171581",
 "site": "IKEA Khobar - Weekly Pump Test",
 "loc": "",
@@ -470,12 +423,374 @@ window.GSSC_SITES=[
 },
 {
 "kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80076",
+"site": "Baker Hughes Spark",
+"loc": "",
+"act": "FA, FF & Fire Suppression",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80078",
+"site": "Baker Hughes OIC (Met Bit)",
+"loc": "",
+"act": "FA, FF & Fire Suppression",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"tag": "Oct",
+"code": "AMC-80080",
+"site": "Baker Hughes CWI",
+"loc": "",
+"act": "FA, FF & Fire Suppression",
+"shift": "DAY",
+"crew": 2
+},
+{
+"kind": "AMC",
+"code": "AMC-80048",
+"site": "ABP Tower",
+"loc": "",
+"act": "FA, FF & FM200",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80049",
+"site": "ABP Residence",
+"loc": "",
+"act": "FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80050",
+"site": "ATC",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80029",
+"site": "Al Rabiyah Tower",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80019",
+"site": "Tabuk Pharmaceuticals",
+"loc": "",
+"act": "FA, FF & FM200",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70020",
+"site": "Al Rumaih Co. - Al Shaik Tower",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70021",
+"site": "MDS Computer Systems (Al Rumaih)",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80026",
+"site": "Emkan Holding",
+"loc": "",
+"act": "FA & FE",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80057",
+"site": "Al Rumaih Wh",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70122",
+"site": "EFS Schlumberger Spark",
+"loc": "",
+"act": "FA, FF, Novec 1230 & Vesda",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70056",
+"site": "Al Anwar Arts Trading",
+"loc": "",
+"act": "FA, FF & CCTV",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70108",
+"site": "Modern Adhesive Products",
+"loc": "",
+"act": "FA, FF & Foam",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80015",
+"site": "Servcorp",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70037",
+"site": "Nestle Motor Pool",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"note": "Under Renewal",
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80073",
+"site": "Cisco (EFS) – Alshaikh Tower, Al Khobar",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70090",
+"site": "ENGIE Solutions",
+"loc": "",
+"act": "FA, FF & Fire Suppression",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70116",
+"site": "New Horizons Contracting",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80012",
+"site": "Spark Logistics",
+"loc": "",
+"act": "FA, FF & Fire Suppression",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70054",
+"site": "M Executive Hotel",
+"loc": "",
+"act": "FA, FF & KH",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70124",
+"site": "Pall Arabia for Trading",
+"loc": "",
+"act": "FA & FE",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80033",
+"site": "Tad Logistics",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80011",
+"site": "Nestle Factory",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80018",
+"site": "Movenpick Hotel",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80005",
+"site": "Total Energies",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70079",
+"site": "Honeywell Spark",
+"loc": "",
+"act": "FA, FF & FM200",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-70107",
+"site": "Bayfront",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80069",
+"site": "GS Packaging",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80059",
+"site": "Zamil Group Real Estate - Murjan Village",
+"loc": "",
+"act": "FF & KH",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "R80002",
+"site": "Star Links - Sulay Wh",
+"loc": "",
+"act": "FA, FF & FE",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80065",
+"site": "Hala Supply Chain Services",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80063",
+"site": "Ittefaq Steel Accommodation",
+"loc": "",
+"act": "FA & FF",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80071",
+"site": "TAQA EFSIM",
+"loc": "",
+"act": "FA, FF & FM200",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
+"code": "AMC-80062",
+"site": "Al Suwaiket Wh",
+"loc": "",
+"act": "FA, FF, Gas Suppression, Emergency & Exit Lights",
+"shift": "DAY",
+"crew": 2,
+"tag": "Sep"
+},
+{
+"kind": "AMC",
 "code": "PO165264",
 "site": "IKEA Weekly Fire Pump Testing",
 "loc": "",
 "act": "Fire pump",
 "shift": "DAY",
-"crew": 2
+"crew": 2,
+"tag": "Sep"
 },
 {
 "kind": "AMC",
@@ -484,7 +799,8 @@ window.GSSC_SITES=[
 "loc": "",
 "act": "FA & FF",
 "shift": "DAY",
-"crew": 2
+"crew": 2,
+"tag": "Sep"
 },
 {
 "kind": "AMC",
@@ -493,7 +809,8 @@ window.GSSC_SITES=[
 "loc": "",
 "act": "FA, Foam, FM200, FE & Fire Pump",
 "shift": "DAY",
-"crew": 2
+"crew": 2,
+"tag": "Sep"
 },
 {
 "kind": "AMC",
@@ -502,7 +819,8 @@ window.GSSC_SITES=[
 "loc": "",
 "act": "FA, FF, Foam & FE",
 "shift": "DAY",
-"crew": 2
+"crew": 2,
+"tag": "Sep"
 },
 {
 "kind": "AMC",
@@ -511,7 +829,8 @@ window.GSSC_SITES=[
 "loc": "",
 "act": "FA, FF & KH",
 "shift": "DAY",
-"crew": 2
+"crew": 2,
+"tag": "Sep"
 },
 {
 "kind": "GMC",

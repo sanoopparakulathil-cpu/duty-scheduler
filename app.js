@@ -5,7 +5,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const todayStr=()=>D.ymd(new Date());
 let S=migrate(load()), tab='today', cur=todayStr(), cycle=D.cycleStart(todayStr()), filter='all', sheetFn=null, form={}, applyN=0, libq='', libKind='all';
 function load(){ try{ const j=JSON.parse(localStorage.getItem(KEY)); if(j&&j.v===1){ const sd=D.seed(); for(const k in sd) if(!(k in j)) j[k]=sd[k]; return j; } }catch(e){} return D.seed(); }
-function migrate(s){ if((s.libVer||0)<2){ const b=(window.GSSC_SITES||[]).map(x=>Object.assign({},x)), names=new Set(b.map(x=>x.site.toLowerCase())); s.lib=b.concat((s.lib||[]).filter(l=>!names.has((l.site||'').toLowerCase()))); s.libVer=2; try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){} } return s; }
+function migrate(s){ if((s.libVer||0)<3){ const b=(window.GSSC_SITES||[]).map(x=>Object.assign({},x)), names=new Set(b.map(x=>x.site.toLowerCase())); s.lib=b.concat((s.lib||[]).filter(l=>!l.kind&&!names.has((l.site||'').toLowerCase()))); s.libVer=3; try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){} } return s; }
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 function commit(){ save(); render(); if(sheetFn) paintSheet(); }
 function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,2600); }
@@ -105,7 +105,7 @@ function sDuty(){
 function libHtml(){
   const q=libq.trim().toLowerCase(); let n=0, h='';
   S.lib.forEach((l,i)=>{ if(libKind!=='all'&&(l.kind||'OTHER')!==libKind)return; if(q&&!([l.code,l.site,l.loc,l.act,l.kind,l.note].join(' ').toLowerCase().includes(q)))return; n++;
-    h+=`<div class="trow"><div class="sp" data-act="addlib" data-i="${i}"><b>${esc(l.site||l.code)}</b> ${l.kind?`<span class="chip">${l.kind}</span>`:''}${l.note?` <span class="chip draft">${esc(l.note)}</span>`:''}<div class="sub">${esc([l.code,l.loc,l.act].filter(Boolean).join(' · '))} · ${l.shift==='DAY'?'Day':'On-Call'} · ${l.crew}</div></div><button class="btn sec sm" data-act="addlib" data-i="${i}" data-oc="1" title="Add as On-Call">🌙</button><button class="btn sec sm" data-act="rmlib" data-i="${i}">✕</button></div>`; });
+    h+=`<div class="trow"><div class="sp" data-act="addlib" data-i="${i}"><b>${esc(l.site||l.code)}</b> ${l.kind?`<span class="chip">${l.kind}${l.tag?' · '+l.tag:''}</span>`:''}${l.note?` <span class="chip draft">${esc(l.note)}</span>`:''}<div class="sub">${esc([l.code,l.loc,l.act].filter(Boolean).join(' · '))} · ${l.shift==='DAY'?'Day':'On-Call'} · ${l.crew}</div></div><button class="btn sec sm" data-act="addlib" data-i="${i}" data-oc="1" title="Add as On-Call">🌙</button><button class="btn sec sm" data-act="rmlib" data-i="${i}">✕</button></div>`; });
   return n?h:`<div class="empty">${S.lib.length?'No match':'No saved sites. Upload your AMC / GMC list below.'}</div>`;
 }
 function sAdd(){
@@ -300,7 +300,7 @@ const A={
    if(f.id){ const i=list.findIndex(x=>x.id===f.id); list[i]=Object.assign({},f); } else { f.id=uid(); list.push(Object.assign({},f)); if(!S.lib.some(l=>l.site===f.site&&l.shift===f.shift&&l.act===f.act)) S.lib.push({code:f.code,site:f.site,loc:f.loc,act:f.act,shift:f.shift,crew:f.crew}); }
    afterDutyChange(); closeSheet(); commit(); },
  delduty(){ const f=form.duty; S.duties[cur]=(S.duties[cur]||[]).filter(x=>x.id!==f.id); afterDutyChange(); closeSheet(); commit(); },
- addlib(el){ const l=S.lib[+el.dataset.i]; const d=Object.assign({id:uid()},l); delete d.kind; delete d.note; if(el.dataset.oc){ d.shift='ONCALL'; } (S.duties[cur]=S.duties[cur]||[]).push(d); closeSheet(); commit(); toast('Site added'); },
+ addlib(el){ const l=S.lib[+el.dataset.i]; const d=Object.assign({id:uid()},l); delete d.kind; delete d.note; delete d.tag; if(el.dataset.oc){ d.shift='ONCALL'; } (S.duties[cur]=S.duties[cur]||[]).push(d); closeSheet(); commit(); toast('Site added'); },
  libkind(el){ libKind=el.dataset.v; paintSheet(); },
  impcrew(el){ form.imp.crew=+el.dataset.v; paintSheet(); },
  doimport(el){ const im=form.imp, list=D.libFromTable(im.tbl,im.map,im.crew), replace=!!el.dataset.replace; if(replace&&!confirm('Replace the whole saved site list with '+list.length+' sites?')) return; const m=D.mergeLib(S.lib,list,replace); S.lib=Array.from(m); closeSheet(); commit(); toast(replace?list.length+' sites saved':(m.added||0)+' new sites added'); },

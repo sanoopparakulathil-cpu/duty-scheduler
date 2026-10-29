@@ -18,34 +18,21 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
-      - name: Tests
-        run: node tests/test.js 2>&1 | tee -a /tmp/build.log; exit ${PIPESTATUS[0]}
-      - name: Prepare web assets
-        run: mkdir -p www && cp index.html style.css app.js logic.js sites.js manifest.json sw.js icon-192.png icon-512.png www/
-      - name: Capacitor
+      - name: Build
+        id: build
         run: |
-          set -o pipefail
-          (npm install && npx cap add android && npx cap sync android) 2>&1 | tee -a /tmp/build.log
-      - name: Fixed signing key
-        run: mkdir -p ~/.android && cp ci/debug.keystore ~/.android/debug.keystore
-      - name: Build debug APK
-        working-directory: android
-        run: |
-          set -o pipefail
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a /tmp/build.log
+          set +e
+          bash ci/build.sh > /tmp/build.log 2>&1
+          echo "exit=$?" >> /tmp/build.log
+          tail -n 80 /tmp/build.log
+          grep -q '^exit=0$' /tmp/build.log
       - name: Push log on failure
         if: failure()
         run: |
-          mkdir /tmp/lg && cp /tmp/build.log /tmp/lg/build.log
-          cd /tmp/lg && git init -q -b buildlog && git config user.email a@b.c && git config user.name ci
-          tail -c 60000 build.log > b && mv b build.log
+          mkdir /tmp/lg && cp /tmp/build.log /tmp/lg/build.log || echo nolog > /tmp/lg/build.log
+          cd /tmp/lg && tail -c 60000 build.log > b && mv b build.log
+          git init -q -b buildlog && git config user.email a@b.c && git config user.name ci
           git add . && git commit -qm log && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" buildlog
-      - name: Locate APK
-        run: |
-          find android -name "*.apk"
-          cp "$(find android -name 'app-debug.apk' | head -1)" DutyScheduler.apk
-          ls -l DutyScheduler.apk
       - uses: actions/upload-artifact@v4
         with:
           name: DutyScheduler-apk

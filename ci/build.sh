@@ -7,6 +7,8 @@ npx cap add android
 npx cap sync android
 mkdir -p ~/.android && cp ci/debug.keystore ~/.android/debug.keystore
 cd android
+sed -i -E "s/versionCode [0-9]+/versionCode ${VCODE:-1}/" app/build.gradle
+grep -n versionCode app/build.gradle
 chmod +x gradlew
 ./gradlew assembleDebug --no-daemon --stacktrace
 cd ..

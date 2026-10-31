@@ -68,6 +68,7 @@ h2{font-size:13px;font-weight:700;margin:0;text-transform:uppercase;letter-spaci
 .day b{font-size:19px;font-family:var(--f-num)}
 .day.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .day .n{position:absolute;top:-6px;right:-4px;background:var(--ink);color:var(--bg);border-radius:999px;font-size:11px;min-width:18px;line-height:18px;padding:0 5px;font-family:var(--f-num)}
+.lastbtn{width:100%;min-height:50px;border:2px dashed var(--accent);background:transparent;color:var(--accent);border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;padding:6px 10px}
 .pill{--c:#888}
 .chip{--c:#888;border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--surface))}
 .chip.off{background:transparent;border-color:var(--line)}
@@ -108,6 +109,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
 
   <section>
     <h2><span>1 · Sites for the day</span><span class="count" id="siteCount">0 picked</span></h2>
+    <button class="lastbtn" id="copyLast" hidden></button>
     <input class="search" id="q" type="search" placeholder="Search, or add: 80035 · Site, City | AMC" autocomplete="off">
     <div class="list" id="sites"></div>
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -187,13 +189,48 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   function savePicks(){
     var k=dateKey();
     if(picked.length)picks[k]=picked.slice();else delete picks[k];
-    delete plans[k];plan=null;$('result').hidden=true;
+    if(plan){syncPlan()}
     var cut=new Date();cut.setDate(cut.getDate()-30);var ck=iso(cut);
     Object.keys(picks).forEach(function(d){if(d<ck)delete picks[d]});
     Object.keys(plans).forEach(function(d){if(d<ck)delete plans[d]});
     save('ds_picks',picks);save('ds_plans',plans);
   }
+  // Sites changed after teams were made: keep the teams, drop removed sites, put new sites in the lightest team.
+  function syncPlan(){
+    var k=dateKey();
+    plan.forEach(function(tm){tm.sites=tm.sites.filter(function(s){return picked.indexOf(s.name)>=0})});
+    picked.forEach(function(n){
+      if(plan.some(function(tm){return tm.sites.some(function(s){return s.name===n})}))return;
+      var t=plan.slice().sort(function(a,b){return a.sites.length-b.sites.length})[0];
+      t.sites.push({name:n,act:actOf(n)});
+    });
+    if(!picked.length){plan=null;delete plans[k];$('result').hidden=true;return}
+    persist();render();$('result').hidden=false;
+  }
+  function lastPlanDate(){
+    var k=dateKey(),best=null;
+    Object.keys(plans).forEach(function(d){if(d<k&&plans[d]&&plans[d].length&&(!best||d>best))best=d});
+    return best;
+  }
+  function updateLast(){
+    var d=lastPlanDate(),b=$('copyLast');
+    if(!d){b.hidden=true;return}
+    var n=0;plans[d].forEach(function(tm){n+=tm.sites.length});
+    var lab=new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    b.textContent='Use last day schedule: '+lab+' ('+n+' sites)';b.dataset.d=d;b.hidden=false;
+  }
+  $('copyLast').addEventListener('click',function(){
+    var d=this.dataset.d;if(!d||!plans[d])return;
+    var k=dateKey();
+    plan=JSON.parse(JSON.stringify(plans[d]));
+    picked=[];plan.forEach(function(tm){tm.sites.forEach(function(s){picked.push(s.name)})});
+    picks[k]=picked.slice();save('ds_picks',picks);
+    persist();render();$('result').hidden=false;$('msg').textContent='';
+    renderSites();renderDays();
+    $('result').scrollIntoView({behavior:'smooth',block:'start'});
+  });
   function renderDays(){
+    updateLast();
     var h='',sel=dateKey(),base=new Date();base.setHours(12,0,0,0);
     for(var i=0;i<14;i++){
       var d=new Date(base);d.setDate(d.getDate()+i);var k=iso(d),n=(picks[k]||[]).length;

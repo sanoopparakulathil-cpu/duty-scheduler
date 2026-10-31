@@ -1,8 +1,8 @@
 set -ex
 node -v; java -version; echo "ANDROID_HOME=$ANDROID_HOME"
-node tests/test.js | tail -3
-mkdir -p www && cp index.html style.css app.js logic.js sites.js manifest.json sw.js icon-192.png icon-512.png www/
+mkdir -p www && cp index.html manifest.json icon-192.png icon-512.png www/
 npm install
+cp node_modules/jszip/dist/jszip.min.js www/
 npx cap add android
 npx cap sync android
 mkdir -p ~/.android && cp ci/debug.keystore ~/.android/debug.keystore

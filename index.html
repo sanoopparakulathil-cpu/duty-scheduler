@@ -97,13 +97,25 @@ h2{font-size:13px;font-weight:700;margin:0;text-transform:uppercase;letter-spaci
 .actions .pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px;font-family:var(--f-num);font-size:13px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pool{border:1px dashed var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.pool.warnp{border-color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.pc{--c:#888;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 16%,var(--surface));border-radius:999px;padding:8px 14px;min-height:42px;cursor:pointer;font-size:15px;font-weight:600}
+.pc.sel,.sl.sel{outline:3px solid var(--ink);outline-offset:1px}
+.pc.sel{background:var(--c);color:#fff}
+.sl{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--bg)}
+.sl .box{border-color:var(--muted)}
+.sl.sel .box{background:var(--accent);border-color:var(--accent)}
+.sl .nm{flex:1;min-width:0;overflow-wrap:anywhere;font-size:15px;font-weight:600}
+.mvh{min-height:44px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;cursor:pointer}
+.addteam{min-height:48px;border:2px dashed var(--line);background:transparent;border-radius:12px;font-weight:700;cursor:pointer;color:var(--ink)}
 </style>
 
 <main>
   <header>
     <div>
       <h1>Daily Duty Scheduler</h1>
-      <div class="sub">Pick sites. Everyone is available. Tap Auto assign.</div>
+      <div class="sub">Pick sites. Make teams. Move people and sites freely.</div>
     </div>
     <input type="date" id="date" aria-label="Duty date">
   </header>
@@ -123,17 +135,18 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   </section>
 
   <section>
-    <h2><span>2 · Team</span><span class="count" id="teamCount"></span></h2>
+    <h2><span>2 · Who is working</span><span class="count" id="teamCount"></span></h2>
     <div class="team" id="team"></div>
-    <p class="hint">Everyone is on. Tap a name only if someone is not working today.</p>
+    <p class="hint">Everyone is on. Tap a name only if someone is not working today. Team sizes are free: build them in step 3.</p>
     <div class="opts">
-      <div class="opt">People per team <span class="step"><button data-o="crew-" aria-label="Fewer people">−</button><span id="vCrew">2</span><button data-o="crew+" aria-label="More people">+</button></span></div>
-      <div class="opt">Number of teams <span class="step"><button data-o="teams-" aria-label="Fewer teams">−</button><span id="vTeams">1</span><button data-o="teams+" aria-label="More teams">+</button></span></div>
+      <div class="opt">Auto: people per team <span class="step"><button data-o="crew-" aria-label="Fewer people">−</button><span id="vCrew">2</span><button data-o="crew+" aria-label="More people">+</button></span></div>
+      <div class="opt">Auto: number of teams <span class="step"><button data-o="teams-" aria-label="Fewer teams">−</button><span id="vTeams">1</span><button data-o="teams+" aria-label="More teams">+</button></span></div>
     </div>
   </section>
 
   <section id="result" hidden>
-    <h2><span>3 · Teams</span></h2>
+    <h2><span>3 · Teams and sites</span><button class="link" id="clearSel" hidden>Clear selection</button></h2>
+    <p class="hint">Tap people or sites to select them, then tap Move here on a team. Or press Auto make teams.</p>
     <div id="banner"></div>
     <div id="cards" style="display:flex;flex-direction:column;gap:10px"></div>
     <div class="actions">
@@ -145,7 +158,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   </section>
 </main>
 
-<div class="go"><button id="assign" disabled>Auto assign</button></div>
+<div class="go"><button id="assign" disabled>Auto make teams</button></div>
 
 <script>
 (function(){
@@ -172,7 +185,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   var opt=load('ds_opt2',{crew:2,teams:1});
   var picked=[];
   var picks=load('ds_picks',{}),plans=load('ds_plans',{});
-  var plan=null;   // [{members:[name|null], sites:[{name,act}]}]
+  var plan=[],sel={};   // plan = [{members:[name], sites:[{name,act}]}]; sel = selected people/sites
   var editing=false;
   var dl=null;
   try{window.claude&&window.claude.use&&window.claude.use('downloads').then(function(x){dl=x},function(){})}catch(e){}
@@ -193,23 +206,17 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   function savePicks(){
     var k=dateKey();
     if(picked.length)picks[k]=picked.slice();else delete picks[k];
-    if(plan){syncPlan()}
+    syncPlan();
     var cut=new Date();cut.setDate(cut.getDate()-30);var ck=iso(cut);
     Object.keys(picks).forEach(function(d){if(d<ck)delete picks[d]});
     Object.keys(plans).forEach(function(d){if(d<ck)delete plans[d]});
     save('ds_picks',picks);save('ds_plans',plans);
   }
-  // Sites changed after teams were made: keep the teams, drop removed sites, put new sites in the lightest team.
+  // Sites changed after teams were made: removed sites leave the teams; new sites wait in Unassigned.
   function syncPlan(){
-    var k=dateKey();
     plan.forEach(function(tm){tm.sites=tm.sites.filter(function(s){return picked.indexOf(s.name)>=0})});
-    picked.forEach(function(n){
-      if(plan.some(function(tm){return tm.sites.some(function(s){return s.name===n})}))return;
-      var t=plan.slice().sort(function(a,b){return a.sites.length-b.sites.length})[0];
-      t.sites.push({name:n,act:actOf(n)});
-    });
-    if(!picked.length){plan=null;delete plans[k];$('result').hidden=true;return}
-    persist();render();$('result').hidden=false;
+    Object.keys(sel).forEach(function(k){if(k.charAt(0)==='s'&&picked.indexOf(k.slice(2))<0)delete sel[k]});
+    persist();render();
   }
   function lastPlanDate(){
     var k=dateKey(),best=null;
@@ -229,7 +236,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     plan=JSON.parse(JSON.stringify(plans[d]));
     picked=[];plan.forEach(function(tm){tm.sites.forEach(function(s){picked.push(s.name)})});
     picks[k]=picked.slice();save('ds_picks',picks);
-    persist();render();$('result').hidden=false;$('msg').textContent='';
+    persist();render();$('msg').textContent='';
     renderSites();renderDays();
     $('result').scrollIntoView({behavior:'smooth',block:'start'});
   });
@@ -245,8 +252,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   }
   function loadDay(){
     var k=dateKey();
-    picked=(picks[k]||[]).slice();plan=plans[k]||null;
-    $('result').hidden=!plan;if(plan)render();
+    picked=(picks[k]||[]).slice();plan=JSON.parse(JSON.stringify(plans[k]||[]));sel={};
+    render();
     renderSites();renderDays();
   }
 
@@ -302,7 +309,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   $('editList').addEventListener('click',function(){editing=!editing;renderSites()});
   $('team').addEventListener('click',function(e){
     var b=e.target.closest('button');if(!b)return;var n=b.dataset.t,i=off.indexOf(n);
-    if(i>=0)off.splice(i,1);else off.push(n);save('ds_off',off);renderTeam();
+    if(i>=0)off.splice(i,1);else{off.push(n);plan.forEach(function(tm){tm.members=tm.members.filter(function(x){return x!==n})});delete sel['p:'+n];persist()}save('ds_off',off);renderTeam();render();
   });
   document.querySelector('.opts').addEventListener('click',function(e){
     var b=e.target.closest('button');if(!b)return;var o=b.dataset.o;
@@ -320,13 +327,18 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     return c;
   }
 
-  // Sites are grouped into teams (in the order you picked them). Each team keeps its sites for the day.
+  function availNames(){return TEAM.filter(function(m){return off.indexOf(m.n)<0}).map(function(m){return m.n})}
+  function onTeam(n){return plan.some(function(tm){return tm.members.indexOf(n)>=0})}
+  function siteTeam(n){for(var i=0;i<plan.length;i++)if(plan[i].sites.some(function(s){return s.name===n}))return i;return -1}
+
+  // Auto make teams: uses the sites you picked. Partners stay together, car owners spread out, recent load is balanced.
   function autoAssign(){
-    var avail=TEAM.filter(function(m){return off.indexOf(m.n)<0}).map(function(m){return m.n});
+    var avail=availNames();
     var load=recentLoad(),used={},S=picked.length,crew=opt.crew;
     function L(n){return load[n]||0}
     function free(n){return avail.indexOf(n)>=0&&!used[n]}
-    var T=Math.min(opt.teams,Math.max(1,Math.floor(avail.length/crew)),S);
+    var T=Math.min(opt.teams,Math.max(1,Math.floor(avail.length/crew)),Math.max(1,S));
+    var oldAct={};plan.forEach(function(tm){tm.sites.forEach(function(s){oldAct[s.name]=s.act})});
     plan=[];
     for(var ti=0;ti<T;ti++){
       var mem=[];
@@ -345,76 +357,113 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
             return (L(a)+(!hasCar&&!byName[a].car?1:0))-(L(b)+(!hasCar&&!byName[b].car?1:0))||(a<b?-1:1)});
           pick=c[0]||null;
         }
-        if(pick)used[pick]=1;
-        mem.push(pick);
+        if(!pick)break;
+        used[pick]=1;mem.push(pick);
       }
       plan.push({members:mem,sites:[]});
     }
     var base=Math.floor(S/T),rem=S%T,idx=0;
     plan.forEach(function(tm,i){
       var n=base+(i<rem?1:0);
-      picked.slice(idx,idx+n).forEach(function(s){tm.sites.push({name:s,act:actOf(s)})});
+      picked.slice(idx,idx+n).forEach(function(s){tm.sites.push({name:s,act:oldAct[s]!==undefined?oldAct[s]:actOf(s)})});
       idx+=n;
     });
-    persist();render();
-    $('result').hidden=false;$('msg').textContent='';
+    sel={};
+    persist();render();$('msg').textContent='';
     $('result').scrollIntoView({behavior:'smooth',block:'start'});
   }
 
   function persist(){
-    var day={};plan.forEach(function(tm){tm.sites.forEach(function(s){day[s.name]=tm.members.slice()})});
-    history[dateKey()]=day;save('ds_hist3',history);
-    plans[dateKey()]=plan;save('ds_plans',plans);
+    var day={},k=dateKey();plan.forEach(function(tm){tm.sites.forEach(function(s){day[s.name]=tm.members.slice()})});
+    if(Object.keys(day).length){history[k]=day}else delete history[k];
+    save('ds_hist3',history);
+    var has=plan.some(function(tm){return tm.members.length||tm.sites.length});
+    if(has)plans[k]=plan;else delete plans[k];
+    save('ds_plans',plans);
   }
+  function unassigned(){return picked.filter(function(n){return siteTeam(n)<0})}
 
   function groups(){
     return plan.filter(function(tm){return tm.sites.length}).map(function(tm){
-      var names=tm.members.filter(Boolean);
-      return{names:names.length?names:['—'],sites:tm.sites.map(function(s){return{label:s.name,act:s.act||''}})};
+      return{names:tm.members.length?tm.members:['—'],sites:tm.sites.map(function(s){return{label:s.name,act:s.act||''}})};
     });
   }
+
+  function selCount(){return Object.keys(sel).length}
+  function pchip(n){return '<button class="pc'+(sel['p:'+n]?' sel':'')+'" style="--c:'+col(n)+'" data-sel="p:'+esc(n)+'">'+esc(n)+(byName[n].car?' 🚗':'')+'</button>'}
+  function srow(n,extra){
+    return '<div class="sl'+(sel['s:'+n]?' sel':'')+'" data-sel="s:'+esc(n)+'"><span class="box">'+(sel['s:'+n]?'✓':'')+'</span><span class="nm">'+esc(n)+'</span>'+(extra||'')+'</div>';
+  }
+  function moveBtn(to){var c=selCount();return c?'<button class="mvh" data-to="'+to+'">Move '+c+' here</button>':''}
 
   function render(){
-    var avail=TEAM.filter(function(m){return off.indexOf(m.n)<0}).map(function(m){return m.n});
-    var missing=0,h='';
+    var show=picked.length||plan.length;
+    $('result').hidden=!show;
+    $('clearSel').hidden=!selCount();
+    if(!show){$('cards').innerHTML='';return}
+    var h='',fp=availNames().filter(function(n){return !onTeam(n)}),ua=unassigned();
+    // Free people
+    h+='<div class="pool"><div class="thead"><h3>Free people</h3><span class="car">'+fp.length+'</span></div><div class="chips">'+
+      (fp.length?fp.map(pchip).join(''):'<span class="hint">Everyone is in a team.</span>')+'</div>'+moveBtn('free')+'</div>';
+    // Sites without a team
+    h+='<div class="pool'+(ua.length?' warnp':'')+'"><div class="thead"><h3>Sites without a team</h3><span class="car">'+ua.length+'</span></div>'+
+      (ua.length?ua.map(function(n){return srow(n)}).join(''):'<span class="hint">'+(picked.length?'All sites have a team.':'Pick sites in step 1.')+'</span>')+moveBtn('nosite')+'</div>';
+    // Teams
+    var empty=0;
     plan.forEach(function(tm,ti){
-      h+='<div class="card"><div class="thead"><h3>Team '+(ti+1)+'</h3><span class="car">'+tm.sites.length+' site'+(tm.sites.length===1?'':'s')+'</span></div><div class="mem">';
-      tm.members.forEach(function(n,k){
-        if(!n)missing++;
-        h+='<select class="msel'+(n?'':' empty')+'" style="--c:'+(n?col(n):'')+'" data-t="'+ti+'" data-k="'+k+'" aria-label="Person '+(k+1)+' in team '+(ti+1)+'">';
-        h+='<option value="">'+(n?'— Empty —':'Choose person')+'</option>';
-        avail.forEach(function(a){
-          if(tm.members.indexOf(a)>=0&&a!==n)return;
-          h+='<option value="'+esc(a)+'"'+(a===n?' selected':'')+'>'+esc(a)+(byName[a].car?' (car)':'')+'</option>';
-        });
-        h+='</select>';
-      });
-      h+='</div>';
-      if(!tm.sites.length)h+='<p class="hint">No sites. Move a site here with its Team menu.</p>';
+      if(!tm.members.length)empty++;
+      h+='<div class="card"><div class="thead"><h3>Team '+(ti+1)+' <span class="car">'+tm.members.length+' people · '+tm.sites.length+' site'+(tm.sites.length===1?'':'s')+'</span></h3>'+
+        '<button class="del" data-delteam="'+ti+'" aria-label="Delete team '+(ti+1)+'">×</button></div>';
+      h+='<div class="chips">'+(tm.members.length?tm.members.map(pchip).join(''):'<span class="hint">No people yet.</span>')+'</div>';
       tm.sites.forEach(function(s,j){
-        h+='<div class="srow"><div class="top"><b>'+esc(s.name)+'</b><select class="mv" data-mt="'+ti+'" data-mj="'+j+'" aria-label="Move '+esc(s.name)+' to team">';
-        plan.forEach(function(_,q){h+='<option value="'+q+'"'+(q===ti?' selected':'')+'>Team '+(q+1)+'</option>'});
-        h+='</select></div><input class="act" data-t="'+ti+'" data-j="'+j+'" value="'+esc(s.act)+'" aria-label="Activity for '+esc(s.name)+'" placeholder="Activity"></div>';
+        h+='<div class="srow">'+srow(s.name)+'<input class="act" data-t="'+ti+'" data-j="'+j+'" value="'+esc(s.act)+'" aria-label="Activity for '+esc(s.name)+'" placeholder="Activity"></div>';
       });
-      h+='</div>';
+      h+=moveBtn(ti)+'</div>';
     });
+    h+='<button class="addteam" id="addTeam">+ Add team</button>';
     $('cards').innerHTML=h;
-    var b=$('banner');
-    b.className='banner'+(missing?'':' okb');
-    b.textContent=(missing?missing+' place'+(missing>1?'s':'')+' not filled. ':'')+(missing?'':plan.length+' team'+(plan.length>1?'s':'')+', '+picked.length+' sites. ')+nice();
+    var b=$('banner'),w=[];
+    if(ua.length)w.push(ua.length+' site'+(ua.length>1?'s':'')+' without a team');
+    if(empty)w.push(empty+' team'+(empty>1?'s':'')+' without people');
+    b.className='banner'+(w.length?'':' okb');
+    b.textContent=(w.length?w.join(', ')+'. ':(plan.length?plan.length+' team'+(plan.length>1?'s':'')+', '+picked.length+' sites. ':'No teams yet. '))+nice();
   }
 
-  $('cards').addEventListener('change',function(e){
-    var sel=e.target.closest('select');if(!sel)return;
-    if(sel.dataset.mt!==undefined){
-      var from=+sel.dataset.mt,j=+sel.dataset.mj,to=+sel.value;
-      var site=plan[from].sites.splice(j,1)[0];plan[to].sites.push(site);
-    }else plan[+sel.dataset.t].members[+sel.dataset.k]=sel.value||null;
-    persist();render();
+  function moveSel(to){
+    var keys=Object.keys(sel);if(!keys.length)return;
+    var acts={};
+    keys.forEach(function(k){
+      var n=k.slice(2);
+      if(k.charAt(0)==='p'){plan.forEach(function(tm){tm.members=tm.members.filter(function(x){return x!==n})})}
+      else{plan.forEach(function(tm){tm.sites=tm.sites.filter(function(s){if(s.name===n){acts[n]=s.act;return false}return true})})}
+    });
+    if(typeof to==='number'&&plan[to]){
+      keys.forEach(function(k){
+        var n=k.slice(2);
+        if(k.charAt(0)==='p'){if(plan[to].members.indexOf(n)<0)plan[to].members.push(n)}
+        else plan[to].sites.push({name:n,act:acts[n]!==undefined?acts[n]:actOf(n)});
+      });
+    }
+    sel={};persist();render();
+  }
+  $('cards').addEventListener('click',function(e){
+    var t=e.target;
+    var mv=t.closest('[data-to]');
+    if(mv){var v=mv.dataset.to;moveSel(v==='free'||v==='nosite'?v:+v);return}
+    var dt=t.closest('[data-delteam]');
+    if(dt){
+      var i=+dt.dataset.delteam,tm=plan[i];
+      plan.splice(i,1);persist();render();return;
+    }
+    if(t.closest('#addTeam')){plan.push({members:[],sites:[]});persist();render();return}
+    if(t.closest('input'))return;
+    var sl=t.closest('[data-sel]');
+    if(sl){var k=sl.dataset.sel;if(sel[k])delete sel[k];else sel[k]=1;render()}
   });
+  $('clearSel').addEventListener('click',function(){sel={};render()});
   $('cards').addEventListener('input',function(e){
-    var inp=e.target.closest('input');if(!inp)return;
-    var s=plan[+inp.dataset.t].sites[+inp.dataset.j];s.act=inp.value;
+    var inp=e.target.closest('input');if(!inp||inp.dataset.t===undefined)return;
+    var s=plan[+inp.dataset.t].sites[+inp.dataset.j];s.act=inp.value;persist();
     var i=siteIdx(s.name);if(i>=0){allSites[i].a=inp.value;save('ds_sites3',allSites)}
   });
   $('assign').addEventListener('click',autoAssign);
@@ -425,6 +474,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
       out+='\n'+g.names.join(', ')+'\n';
       g.sites.forEach(function(s){out+='  '+s.label+(s.act?' ('+s.act+')':'')+'\n'});
     });
+    var ua=unassigned();
+    if(ua.length){out+='\nNO TEAM YET\n';ua.forEach(function(n){out+='  '+n+'\n'})}
     return out;
   }
   $('copy').addEventListener('click',function(){
@@ -473,6 +524,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   }
   $('word').addEventListener('click',async function(){
     var msg=$('msg');
+    if(unassigned().length){msg.textContent='Some sites have no team. Move them into a team first.';return}
+    if(!groups().length){msg.textContent='Make a team with at least one site first.';return}
     var C=window.Capacitor;
     if(C&&C.isNativePlatform&&C.isNativePlatform()){
       try{

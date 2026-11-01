@@ -69,6 +69,9 @@ h2{font-size:13px;font-weight:700;margin:0;text-transform:uppercase;letter-spaci
 .day.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .day .n{position:absolute;top:-6px;right:-4px;background:var(--ink);color:var(--bg);border-radius:999px;font-size:11px;min-width:18px;line-height:18px;padding:0 5px;font-family:var(--f-num)}
 .lastbtn{width:100%;min-height:50px;border:2px dashed var(--accent);background:transparent;color:var(--accent);border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;padding:6px 10px}
+.prow{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line);min-height:52px}
+.prow .num{font-family:var(--f-num);color:var(--muted);width:22px;flex:none;text-align:right;font-size:13px}
+.prow .name{flex:1;min-width:0;overflow-wrap:anywhere}
 .pill{--c:#888}
 .chip{--c:#888;border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--surface))}
 .chip.off{background:transparent;border-color:var(--line)}
@@ -110,10 +113,11 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   <section>
     <h2><span>1 · Sites for the day</span><span class="count" id="siteCount">0 picked</span></h2>
     <button class="lastbtn" id="copyLast" hidden></button>
-    <input class="search" id="q" type="search" placeholder="Search, or add: 80035 · Site, City | AMC" autocomplete="off">
-    <div class="list" id="sites"></div>
+    <div id="picked"></div>
+    <input class="search" id="q" type="search" placeholder="Type site name to add" autocomplete="off">
+    <div class="list" id="sites" hidden></div>
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <p class="hint">Tap a site to add it. It stays saved for that day. New site: type it as code · name, city | activity.</p>
+      <p class="hint">Type to find a site, tap it to add. Saved for that day. New site: code · name, city | activity.</p>
       <button class="link" id="editList">Edit list</button>
     </div>
   </section>
@@ -124,7 +128,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     <p class="hint">Everyone is on. Tap a name only if someone is not working today.</p>
     <div class="opts">
       <div class="opt">People per team <span class="step"><button data-o="crew-" aria-label="Fewer people">−</button><span id="vCrew">2</span><button data-o="crew+" aria-label="More people">+</button></span></div>
-      <div class="opt">Max sites per team <span class="step"><button data-o="max-" aria-label="Fewer sites">−</button><span id="vMax">4</span><button data-o="max+" aria-label="More sites">+</button></span></div>
+      <div class="opt">Number of teams <span class="step"><button data-o="teams-" aria-label="Fewer teams">−</button><span id="vTeams">1</span><button data-o="teams+" aria-label="More teams">+</button></span></div>
     </div>
   </section>
 
@@ -165,7 +169,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   var allSites=load('ds_sites3',DEFAULT_SITES);
   var history=load('ds_hist3',{});
   var off=load('ds_off',['Santosh']);
-  var opt=load('ds_opt',{crew:2,max:4});
+  var opt=load('ds_opt2',{crew:2,teams:1});
   var picked=[];
   var picks=load('ds_picks',{}),plans=load('ds_plans',{});
   var plan=null;   // [{members:[name|null], sites:[{name,act}]}]
@@ -247,19 +251,26 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   }
 
   function renderSites(){
-    var q=$('q').value.trim(),ql=q.toLowerCase(),h='';
+    var q=$('q').value.trim(),ql=q.toLowerCase(),h='',ph='';
+    picked.forEach(function(n,i){
+      ph+='<div class="prow"><span class="num">'+(i+1)+'</span><span class="name">'+esc(n)+'<br><span class="car">'+esc(actOf(n))+'</span></span><button class="del" data-rm="'+esc(n)+'" aria-label="Remove '+esc(n)+'">×</button></div>';
+    });
+    if(!ph)ph='<p class="hint">No sites for this day yet. Type a site name below.</p>';
+    $('picked').innerHTML=ph;
     var typed=q.split('|')[0].trim().toLowerCase();
-    var list=allSites.filter(function(s){return !ql||s.n.toLowerCase().indexOf(ql)>=0});
     var exact=allSites.some(function(s){return s.n.toLowerCase()===typed});
-    if(q&&!exact)h+='<div class="row add" data-add="1"><span class="box" style="border-color:var(--accent);color:var(--accent)">+</span><span class="name">Add "'+esc(q)+'"</span></div>';
+    var list=allSites.filter(function(s){
+      if(editing)return !ql||s.n.toLowerCase().indexOf(ql)>=0;
+      return ql&&s.n.toLowerCase().indexOf(ql)>=0&&picked.indexOf(s.n)<0;
+    });
+    if(!editing)list=list.slice(0,8);
+    if(q&&!exact&&!editing)h+='<div class="row add" data-add="1"><span class="box" style="border-color:var(--accent);color:var(--accent)">+</span><span class="name">Add "'+esc(q)+'"</span></div>';
     list.forEach(function(site){
-      var s=site.n,on=pickedIdx(s)>=0;
-      h+='<div class="row'+(on?' on':'')+'" data-site="'+esc(s)+'"><span class="box">'+(on?'✓':'')+'</span><span class="name">'+esc(s)+'<br><span class="car">'+esc(site.a)+'</span></span>';
-      if(editing)h+='<button class="del" data-del="'+esc(s)+'" aria-label="Remove '+esc(s)+' from list">×</button>';
+      h+='<div class="row" data-site="'+esc(site.n)+'"><span class="name">'+esc(site.n)+'<br><span class="car">'+esc(site.a)+'</span></span>';
+      if(editing)h+='<button class="del" data-del="'+esc(site.n)+'" aria-label="Remove '+esc(site.n)+' from list">×</button>';
       h+='</div>';
     });
-    if(!h)h='<p class="hint" style="padding:8px">No sites yet. Type a name above to add one.</p>';
-    $('sites').innerHTML=h;
+    $('sites').innerHTML=h;$('sites').hidden=!h;
     $('siteCount').textContent=picked.length+' picked';
     $('assign').disabled=!picked.length;
     $('editList').textContent=editing?'Done':'Edit list';
@@ -267,21 +278,25 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   function renderTeam(){
     $('team').innerHTML=TEAM.map(function(m){return '<button class="chip'+(off.indexOf(m.n)>=0?' off':'')+'" style="--c:'+col(m.n)+'" data-t="'+esc(m.n)+'">'+esc(m.n)+'</button>'}).join('');
     $('teamCount').textContent=(TEAM.length-off.length)+' available';
-    $('vCrew').textContent=opt.crew;$('vMax').textContent=opt.max;
+    $('vCrew').textContent=opt.crew;$('vTeams').textContent=opt.teams;
   }
 
+  $('picked').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||!b.dataset.rm)return;
+    var k=picked.indexOf(b.dataset.rm);if(k>=0)picked.splice(k,1);
+    savePicks();renderSites();renderDays();
+  });
   $('sites').addEventListener('click',function(e){
     var b=e.target.closest('button'),r=e.target.closest('.row');if(!r)return;
     if(b&&b.dataset.del){allSites=allSites.filter(function(s){return s.n!==b.dataset.del});picked=picked.filter(function(p){return p!==b.dataset.del});save('ds_sites3',allSites);savePicks();renderSites();renderDays();return}
     if(editing)return;
     if(r.dataset.add){
       var parts=$('q').value.split('|'),nm=parts[0].trim(),ac=(parts[1]||'GMC').trim();
-      if(nm){allSites.push({n:nm,a:ac});save('ds_sites3',allSites);picked.push(nm);$('q').value='';savePicks()}
-      renderSites();renderDays();return;
+      if(nm){allSites.push({n:nm,a:ac});save('ds_sites3',allSites);if(picked.indexOf(nm)<0)picked.push(nm);$('q').value='';savePicks()}
+    }else{
+      var s=r.dataset.site;if(picked.indexOf(s)<0)picked.push(s);$('q').value='';savePicks();
     }
-    var s=r.dataset.site,k=pickedIdx(s);
-    if(k>=0)picked.splice(k,1);else picked.push(s);
-    savePicks();renderSites();renderDays();
+    renderSites();renderDays();$('q').focus();
   });
   $('q').addEventListener('input',renderSites);
   $('editList').addEventListener('click',function(){editing=!editing;renderSites()});
@@ -292,8 +307,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   document.querySelector('.opts').addEventListener('click',function(e){
     var b=e.target.closest('button');if(!b)return;var o=b.dataset.o;
     if(o==='crew-'&&opt.crew>1)opt.crew--;if(o==='crew+'&&opt.crew<4)opt.crew++;
-    if(o==='max-'&&opt.max>1)opt.max--;if(o==='max+'&&opt.max<8)opt.max++;
-    save('ds_opt',opt);renderTeam();
+    if(o==='teams-'&&opt.teams>1)opt.teams--;if(o==='teams+'&&opt.teams<6)opt.teams++;
+    save('ds_opt2',opt);renderTeam();
   });
   $('date').addEventListener('change',loadDay);
   $('days').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;$('date').value=b.dataset.d;loadDay()});
@@ -311,8 +326,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     var load=recentLoad(),used={},S=picked.length,crew=opt.crew;
     function L(n){return load[n]||0}
     function free(n){return avail.indexOf(n)>=0&&!used[n]}
-    var T=Math.ceil(S/opt.max);
-    T=Math.min(T,Math.max(1,Math.floor(avail.length/crew)),S);
+    var T=Math.min(opt.teams,Math.max(1,Math.floor(avail.length/crew)),S);
     plan=[];
     for(var ti=0;ti<T;ti++){
       var mem=[];
@@ -362,9 +376,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
 
   function render(){
     var avail=TEAM.filter(function(m){return off.indexOf(m.n)<0}).map(function(m){return m.n});
-    var missing=0,over=0,h='';
+    var missing=0,h='';
     plan.forEach(function(tm,ti){
-      if(tm.sites.length>opt.max)over++;
       h+='<div class="card"><div class="thead"><h3>Team '+(ti+1)+'</h3><span class="car">'+tm.sites.length+' site'+(tm.sites.length===1?'':'s')+'</span></div><div class="mem">';
       tm.members.forEach(function(n,k){
         if(!n)missing++;
@@ -387,8 +400,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     });
     $('cards').innerHTML=h;
     var b=$('banner');
-    b.className='banner'+(missing||over?'':' okb');
-    b.textContent=(missing?missing+' place'+(missing>1?'s':'')+' not filled. ':'')+(over?over+' team'+(over>1?'s have':' has')+' more than '+opt.max+' sites (not enough people). ':'')+(missing||over?'':plan.length+' team'+(plan.length>1?'s':'')+', '+picked.length+' sites. ')+nice();
+    b.className='banner'+(missing?'':' okb');
+    b.textContent=(missing?missing+' place'+(missing>1?'s':'')+' not filled. ':'')+(missing?'':plan.length+' team'+(plan.length>1?'s':'')+', '+picked.length+' sites. ')+nice();
   }
 
   $('cards').addEventListener('change',function(e){

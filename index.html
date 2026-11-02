@@ -49,6 +49,10 @@ h2{font-size:13px;font-weight:700;margin:0;text-transform:uppercase;letter-spaci
 .quick-fav{width:42px;min-height:48px;border:1px solid var(--line);border-left:0;border-radius:0 10px 10px 0;background:var(--bg);font-size:20px;cursor:pointer;color:var(--muted)}
 .quick-fav.on{color:var(--accent)}
 .site-share{width:100%;min-height:48px;border:0;border-radius:10px;background:var(--ink);color:var(--bg);font-weight:700;cursor:pointer}
+.upload-box{border:1px dashed var(--line);padding:12px;display:flex;flex-direction:column;gap:8px}
+.upload-label{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:8px 12px;background:var(--chip);border:1px solid var(--line);border-radius:10px;font-weight:700;cursor:pointer}
+.upload-label input{position:absolute;width:1px;height:1px;opacity:0}
+.import-msg{font-size:13px;color:var(--ok);min-height:18px}
 .row{flex:none;display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid var(--line);min-height:48px;cursor:pointer;border-radius:8px}
 .row:last-child{border-bottom:0}
 .row .name{flex:1;min-width:0;overflow-wrap:anywhere}
@@ -143,9 +147,16 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     <input class="search" id="q" type="search" placeholder="Type site name to add" autocomplete="off">
     <div class="quick-sites" id="quickSites"></div>
     <button class="site-share" id="shareSites" disabled>Share selected sites</button>
+    <div class="upload-box">
+      <strong>Upload site list</strong>
+      <p class="hint">Upload CSV or TSV with Time and Site name columns. Excel files: save as CSV first. Duplicate site names are skipped; other rows still import.</p>
+      <label class="upload-label">Choose CSV / TSV file<input id="siteUpload" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+      <button class="mini" id="downloadTemplate">Download sample CSV</button>
+      <div class="import-msg" id="importMsg" aria-live="polite"></div>
+    </div>
     <div class="list" id="sites" hidden></div>
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <p class="hint">Type to find a site, tap it to add. Saved for that day. New site: code · name, city | activity.</p>
+      <p class="hint">Tap a quick site, search, or upload a CSV/TSV. New site: code · name, city | activity.</p>
       <button class="link" id="editList">Edit list</button>
     </div>
   </section>
@@ -153,16 +164,12 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   <section>
     <h2><span>2 · Who is working</span><span class="count" id="teamCount"></span></h2>
     <div class="team" id="team"></div>
-    <p class="hint">Everyone is on. Sanoop is the site supervisor (not in teams). Tap a name only if someone is not working today. Team sizes are free: build them in step 3.</p>
-    <div class="opts">
-      <div class="opt">Auto: people per team <span class="step"><button data-o="crew-" aria-label="Fewer people">−</button><span id="vCrew">2</span><button data-o="crew+" aria-label="More people">+</button></span></div>
-      <div class="opt">Auto: number of teams <span class="step"><button data-o="teams-" aria-label="Fewer teams">−</button><span id="vTeams">1</span><button data-o="teams+" aria-label="More teams">+</button></span></div>
-    </div>
+    <p class="hint">Everyone is on. Sanoop is the site supervisor. Tap a name only if someone is not working today. You will choose technicians for each team yourself.</p>
   </section>
 
   <section id="result" hidden>
     <h2><span>3 · Teams and sites</span><button class="link" id="clearSel" hidden>Clear selection</button></h2>
-    <p class="hint">Tap people or sites to select them, then tap Move here on a team. Or press Auto make teams.</p>
+    <p class="hint">Manual assignment: tap a technician and one or more sites, then choose Move here on the team. Add a team for another crew.</p>
     <div id="banner"></div>
     <div id="cards" style="display:flex;flex-direction:column;gap:10px"></div>
     <div class="actions">
@@ -175,7 +182,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   </section>
 </main>
 
-<div class="go"><button id="assign" disabled>Auto make teams</button></div>
+<div class="go"><button id="assign" disabled>Start manual assignment</button></div>
 
 <script>
 (function(){
@@ -198,10 +205,9 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   var allSites=load('ds_sites3',DEFAULT_SITES);
   var history=load('ds_hist3',{});
   var off=load('ds_off',['Santosh']);
-  var opt=load('ds_opt2',{crew:2,teams:1});
   var picked=[];
   var picks=load('ds_picks',{}),plans=load('ds_plans',{});
-  var visits=load('ds_visit',{}),favorites=load('ds_favorites',[]),plan=[],sel={};   // plan = [{members:[name], sites:[{name,act}]}]; sel = selected people/sites
+  var visits=load('ds_visit',{}),favorites=load('ds_favorites',[]),siteTimes=load('ds_site_times',{}),plan=[],sel={};   // plan = [{members:[name], sites:[{name,act}]}]; sel = selected people/sites
   var editing=false;
   var dl=null;
   try{window.claude&&window.claude.use&&window.claude.use('downloads').then(function(x){dl=x},function(){})}catch(e){}
@@ -209,6 +215,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   function siteIdx(n){for(var i=0;i<allSites.length;i++)if(allSites[i].n===n)return i;return -1}
   function actOf(n){var i=siteIdx(n);return i>=0?allSites[i].a:''}
+  function timeOf(n){return (siteTimes[dateKey()]||{})[n]||''}
 
   function iso(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(x<10?'0':'')+x}
   var t=new Date();t.setDate(t.getDate()+1);
@@ -229,9 +236,10 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
   function shiftKey(delta){var d=dObj();d.setDate(d.getDate()+delta);return iso(d)}
   // Move one site to the next / previous day (keeps the supervisor-visit flag).
   function moveDay(n,delta){
-    var k=dateKey(),t=shiftKey(delta),v=vis(k,n);
+    var k=dateKey(),t=shiftKey(delta),v=vis(k,n),tm=timeOf(n);
     var i=picked.indexOf(n);if(i>=0)picked.splice(i,1);
     var a=(picks[t]||[]);if(a.indexOf(n)<0)a.push(n);picks[t]=a;
+    if(tm){siteTimes[t]=siteTimes[t]||{};siteTimes[t][n]=tm;delete siteTimes[k][n];save('ds_site_times',siteTimes)}
     if(v)setVis(t,n,true);
     setVis(k,n,false);
     delete sel['s:'+n];
@@ -246,7 +254,8 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     var cut=new Date();cut.setDate(cut.getDate()-30);var ck=iso(cut);
     Object.keys(picks).forEach(function(d){if(d<ck)delete picks[d]});
     Object.keys(plans).forEach(function(d){if(d<ck)delete plans[d]});
-    save('ds_picks',picks);save('ds_plans',plans);
+    Object.keys(siteTimes).forEach(function(d){if(d<ck)delete siteTimes[d]});
+    save('ds_picks',picks);save('ds_plans',plans);save('ds_site_times',siteTimes);
   }
   // Sites changed after teams were made: removed sites leave the teams; new sites wait in Unassigned.
   function syncPlan(){
@@ -271,6 +280,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     var k=dateKey();
     plan=JSON.parse(JSON.stringify(plans[d]));
     picked=[];plan.forEach(function(tm){tm.sites.forEach(function(s){picked.push(s.name)})});
+    siteTimes[k]=JSON.parse(JSON.stringify(siteTimes[d]||{}));save('ds_site_times',siteTimes);
     picks[k]=picked.slice();save('ds_picks',picks);
     persist();render();$('msg').textContent='';
     renderSites();renderDays();
@@ -310,10 +320,53 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     $('shareSites').disabled=!picked.length;
   }
 
+  function parseTable(raw){
+    var first=raw.split(/\r?\n/).filter(function(x){return x.trim()})[0]||'';
+    var tab=(first.match(/\t/g)||[]).length,comma=(first.match(/,/g)||[]).length,semi=(first.match(/;/g)||[]).length;
+    var sep=tab? '\t' : (semi>comma?';':','),rows=[],row=[],cell='',quoted=false;
+    for(var i=0;i<raw.length;i++){
+      var c=raw[i];
+      if(c==='"'){
+        if(quoted&&raw[i+1]==='"'){cell+='"';i++}else quoted=!quoted;
+      }else if(c===sep&&!quoted){row.push(cell.trim());cell=''}
+      else if((c==='\n'||c==='\r')&&!quoted){
+        if(c==='\r'&&raw[i+1]==='\n')i++;
+        row.push(cell.trim());cell='';
+        if(row.some(function(x){return x!==''}))rows.push(row);
+        row=[];
+      }else cell+=c;
+    }
+    row.push(cell.trim());if(row.some(function(x){return x!==''}))rows.push(row);
+    return rows;
+  }
+
+  function importSiteRows(rows){
+    if(!rows.length)throw new Error('The file has no rows.');
+    function key(s){return String(s||'').replace(/^\uFEFF/,'').trim().replace(/\s+/g,' ').toLowerCase()}
+    var head=rows[0].map(key),siteCol=head.findIndex(function(x){return /site|location|property/.test(x)}),timeCol=head.findIndex(function(x){return /time|hour|start/.test(x)}),actCol=head.findIndex(function(x){return /activity|service|task/.test(x)}),start=0;
+    if(siteCol>=0){start=1}else{
+      var firstTime=rows[0][0]&&/(\d{1,2}[:.h]\d{2}|\d{1,2}\s?(am|pm))/i.test(rows[0][0]);
+      timeCol=firstTime?0:1;siteCol=firstTime?1:0;
+    }
+    if(siteCol<0)throw new Error('Include a column heading such as “Site name”.');
+    var added=0,skipped=0,seen={},k=dateKey();siteTimes[k]=siteTimes[k]||{};
+    rows.slice(start).forEach(function(r){
+      var rawName=(r[siteCol]||'').trim(),fold=key(rawName),tm=timeCol>=0?(r[timeCol]||'').trim():'';
+      if(!fold){skipped++;return}
+      var existing=allSites.find(function(s){return key(s.n)===fold}),name=existing?existing.n:rawName;
+      if(seen[fold]||picked.some(function(n){return key(n)===fold})){skipped++;if(tm&&!siteTimes[k][name])siteTimes[k][name]=tm;return}
+      seen[fold]=true;
+      if(!existing){allSites.push({n:name,a:actCol>=0?(r[actCol]||'').trim():'GMC'});existing=allSites[allSites.length-1]}
+      picked.push(name);if(tm)siteTimes[k][name]=tm;added++;
+    });
+    save('ds_sites3',allSites);save('ds_site_times',siteTimes);savePicks();renderSites();renderDays();
+    return{added:added,skipped:skipped};
+  }
+
   function renderSites(){
     var q=$('q').value.trim(),ql=q.toLowerCase(),h='',ph='';
     picked.forEach(function(n,i){
-      ph+='<div class="prow"><span class="num">'+(i+1)+'</span><span class="name">'+esc(n)+'<br><span class="car">'+esc(actOf(n))+'</span>'+
+      ph+='<div class="prow"><span class="num">'+(i+1)+'</span><span class="name">'+esc(n)+'<br><span class="car">'+(timeOf(n)?esc(timeOf(n))+' · ':'')+esc(actOf(n))+'</span>'+
         '<div class="acts"><button class="mini'+(vis(dateKey(),n)?' on':'')+'" data-vis="'+esc(n)+'">'+(vis(dateKey(),n)?'✓ ':'')+'Sanoop visit</button>'+
         '<button class="mini" data-day="-1" data-n="'+esc(n)+'">‹ Prev day</button><button class="mini" data-day="1" data-n="'+esc(n)+'">Next day ›</button></div></span>'+
         '<button class="del" data-rm="'+esc(n)+'" aria-label="Remove '+esc(n)+'">×</button></div>';
@@ -337,12 +390,12 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     renderQuickSites();
     $('siteCount').textContent=picked.length+' picked';
     $('assign').disabled=!picked.length;
+    $('assign').textContent=plan.length?'Continue manual assignment':'Start manual assignment';
     $('editList').textContent=editing?'Done':'Edit list';
   }
   function renderTeam(){
     $('team').innerHTML=TEAM.filter(function(m){return !m.sup}).map(function(m){return '<button class="chip'+(off.indexOf(m.n)>=0?' off':'')+'" style="--c:'+col(m.n)+'" data-t="'+esc(m.n)+'">'+esc(m.n)+'</button>'}).join('');
     $('teamCount').textContent=availNames().length+' available';
-    $('vCrew').textContent=opt.crew;$('vTeams').textContent=opt.teams;
   }
 
   $('picked').addEventListener('click',function(e){
@@ -351,6 +404,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     if(b.dataset.day){moveDay(b.dataset.n,+b.dataset.day);return}
     if(!b.dataset.rm)return;
     var k=picked.indexOf(b.dataset.rm);if(k>=0)picked.splice(k,1);setVis(dateKey(),b.dataset.rm,false);
+    if(siteTimes[dateKey()]){delete siteTimes[dateKey()][b.dataset.rm];save('ds_site_times',siteTimes)}
     savePicks();renderSites();renderDays();
   });
   $('sites').addEventListener('click',function(e){
@@ -379,9 +433,22 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
       savePicks();renderSites();renderDays();
     }
   });
+  $('siteUpload').addEventListener('change',async function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    $('importMsg').textContent='Reading '+f.name+'…';
+    try{
+      var result=importSiteRows(parseTable(await f.text()));
+      $('importMsg').textContent='Added '+result.added+' site'+(result.added===1?'':'s')+'. Skipped '+result.skipped+' duplicate or blank row'+(result.skipped===1?'':'s')+'.';
+    }catch(err){$('importMsg').textContent='Could not import: '+err.message;}
+    this.value='';
+  });
+  $('downloadTemplate').addEventListener('click',function(){
+    var blob=new Blob(['\uFEFFTime,Site name,Activity\r\n08:00,Example site A,Inspection\r\n10:30,Example site B,Repair\r\n'],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='duty-sites-template.csv';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+  });
   $('shareSites').addEventListener('click',async function(){
     if(!picked.length)return;
-    var message='Sites for '+nice()+':\n'+picked.map(function(n){return '• '+n+(actOf(n)?' — '+actOf(n):'')}).join('\n');
+    var message='Sites for '+nice()+':\n'+picked.map(function(n){return '• '+(timeOf(n)?timeOf(n)+' — ':'')+n+(actOf(n)?' — '+actOf(n):'')}).join('\n');
     try{
       if(navigator.share){await navigator.share({title:'Duty sites · '+docDate(),text:message});}
       else if(navigator.clipboard){await navigator.clipboard.writeText(message);this.textContent='Copied — paste into your message';setTimeout(function(){ $('shareSites').textContent='Share selected sites';},2500);}
@@ -397,64 +464,18 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     var b=e.target.closest('button');if(!b)return;var n=b.dataset.t,i=off.indexOf(n);
     if(i>=0)off.splice(i,1);else{off.push(n);plan.forEach(function(tm){tm.members=tm.members.filter(function(x){return x!==n})});delete sel['p:'+n];persist()}save('ds_off',off);renderTeam();render();
   });
-  document.querySelector('.opts').addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b)return;var o=b.dataset.o;
-    if(o==='crew-'&&opt.crew>1)opt.crew--;if(o==='crew+'&&opt.crew<4)opt.crew++;
-    if(o==='teams-'&&opt.teams>1)opt.teams--;if(o==='teams+'&&opt.teams<6)opt.teams++;
-    save('ds_opt2',opt);renderTeam();
-  });
   $('date').addEventListener('change',loadDay);
   $('days').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;$('date').value=b.dataset.d;loadDay()});
-
-  function recentLoad(){
-    var c={},d0=dObj();
-    for(var k=1;k<=7;k++){var d=new Date(d0);d.setDate(d.getDate()-k);var day=history[iso(d)];
-      if(day)Object.keys(day).forEach(function(s){day[s].forEach(function(n){if(n)c[n]=(c[n]||0)+1})})}
-    return c;
-  }
 
   function availNames(){return TEAM.filter(function(m){return !m.sup&&off.indexOf(m.n)<0}).map(function(m){return m.n})}
   function onTeam(n){return plan.some(function(tm){return tm.members.indexOf(n)>=0})}
   function siteTeam(n){for(var i=0;i<plan.length;i++)if(plan[i].sites.some(function(s){return s.name===n}))return i;return -1}
 
-  // Auto make teams: uses the sites you picked. Partners stay together, car owners spread out, recent load is balanced.
-  function autoAssign(){
-    var avail=availNames();
-    var load=recentLoad(),used={},S=picked.length,crew=opt.crew;
-    function L(n){return load[n]||0}
-    function free(n){return avail.indexOf(n)>=0&&!used[n]}
-    var T=Math.min(opt.teams,Math.max(1,Math.floor(avail.length/crew)),Math.max(1,S));
-    var oldAct={};plan.forEach(function(tm){tm.sites.forEach(function(s){oldAct[s.name]=s.act})});
-    plan=[];
-    for(var ti=0;ti<T;ti++){
-      var mem=[];
-      var mains=avail.filter(function(n){return free(n)&&byName[n].main}).sort(function(a,b){return L(a)-L(b)||byName[a].i-byName[b].i});
-      var lead=mains[0]||avail.filter(free).sort(function(a,b){return L(a)-L(b)||byName[a].i-byName[b].i})[0]||null;
-      if(lead){mem.push(lead);used[lead]=1}
-      while(mem.length<crew){
-        var pick=null;
-        mem.forEach(function(n){var q=byName[n].p;if(!pick&&q&&free(q))pick=q});
-        if(!pick){
-          var hasCar=mem.some(function(n){return byName[n].car});
-          var c=avail.filter(free).sort(function(a,b){
-            return (L(a)+(!hasCar&&!byName[a].car?1:0))-(L(b)+(!hasCar&&!byName[b].car?1:0))||(byName[a].main?0:1)-(byName[b].main?0:1)||byName[a].i-byName[b].i});
-          pick=c[0]||null;
-        }
-        if(!pick)break;
-        used[pick]=1;mem.push(pick);
-      }
-      mem.sort(function(a,b){return (byName[a].main?0:1)-(byName[b].main?0:1)||byName[a].i-byName[b].i});
-      plan.push({members:mem,sites:[]});
-    }
-    var base=Math.floor(S/T),rem=S%T,idx=0;
-    plan.forEach(function(tm,i){
-      var n=base+(i<rem?1:0);
-      picked.slice(idx,idx+n).forEach(function(s){tm.sites.push({name:s,act:oldAct[s]!==undefined?oldAct[s]:actOf(s)})});
-      idx+=n;
-    });
-    sel={};
-    persist();render();$('msg').textContent='';
-    $('result').scrollIntoView({behavior:'smooth',block:'start'});
+  function startManual(){
+    if(!picked.length)return;
+    if(!plan.length)plan=[{members:[],sites:[]}];
+    persist();render();$('result').scrollIntoView({behavior:'smooth',block:'start'});
+    $('msg').textContent='Select a technician and one or more sites, then tap Move here on the team.';
   }
 
   function persist(){
@@ -469,7 +490,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
 
   function groups(){
     return plan.filter(function(tm){return tm.sites.length}).map(function(tm){
-      return{names:tm.members.length?tm.members:['—'],sites:tm.sites.map(function(s){return{label:s.name,act:((s.act||'')+(vis(dateKey(),s.name)?((s.act?' | ':'')+'Supervisor visit'):''))}})};
+      return{names:tm.members.length?tm.members:['—'],sites:tm.sites.map(function(s){return{label:(timeOf(s.name)?timeOf(s.name)+' · ':'')+s.name,act:((s.act||'')+(vis(dateKey(),s.name)?((s.act?' | ':'')+'Supervisor visit'):''))}})};
     });
   }
 
@@ -491,7 +512,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
       (fp.length?fp.map(pchip).join(''):'<span class="hint">Everyone is in a team.</span>')+'</div>'+moveBtn('free')+'</div>';
     // Sites without a team
     h+='<div class="pool'+(ua.length?' warnp':'')+'"><div class="thead"><h3>Sites without a team</h3><span class="car">'+ua.length+'</span></div>'+
-      (ua.length?ua.map(function(n){return srow(n)+'<div class="acts"><button class="mini'+(vis(dateKey(),n)?' on':'')+'" data-vis="'+esc(n)+'">'+(vis(dateKey(),n)?'✓ ':'')+'Sanoop visit</button><button class="mini" data-day="1" data-n="'+esc(n)+'">Next day ›</button></div>'}).join(''):'<span class="hint">'+(picked.length?'All sites have a team.':'Pick sites in step 1.')+'</span>')+moveBtn('nosite')+'</div>';
+      (ua.length?ua.map(function(n){return srow(n,timeOf(n)?'<span class="car">'+esc(timeOf(n))+'</span>':'')+'<div class="acts"><button class="mini'+(vis(dateKey(),n)?' on':'')+'" data-vis="'+esc(n)+'">'+(vis(dateKey(),n)?'✓ ':'')+'Sanoop visit</button><button class="mini" data-day="1" data-n="'+esc(n)+'">Next day ›</button></div>'}).join(''):'<span class="hint">'+(picked.length?'All sites have a team.':'Pick sites in step 1.')+'</span>')+moveBtn('nosite')+'</div>';
     // Teams
     var empty=0;
     plan.forEach(function(tm,ti){
@@ -500,7 +521,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
         '<button class="del" data-delteam="'+ti+'" aria-label="Delete team '+(ti+1)+'">×</button></div>';
       h+='<div class="chips">'+(tm.members.length?tm.members.map(pchip).join(''):'<span class="hint">No people yet.</span>')+'</div>';
       tm.sites.forEach(function(s,j){
-        h+='<div class="srow">'+srow(s.name)+'<div class="acts"><button class="mini'+(vis(dateKey(),s.name)?' on':'')+'" data-vis="'+esc(s.name)+'">'+(vis(dateKey(),s.name)?'✓ ':'')+'Sanoop visit</button><button class="mini" data-day="1" data-n="'+esc(s.name)+'">Next day ›</button></div><input class="act" data-t="'+ti+'" data-j="'+j+'" value="'+esc(s.act)+'" aria-label="Activity for '+esc(s.name)+'" placeholder="Activity"></div>';
+        h+='<div class="srow">'+srow(s.name,timeOf(s.name)?'<span class="car">'+esc(timeOf(s.name))+'</span>':'')+'<div class="acts"><button class="mini'+(vis(dateKey(),s.name)?' on':'')+'" data-vis="'+esc(s.name)+'">'+(vis(dateKey(),s.name)?'✓ ':'')+'Sanoop visit</button><button class="mini" data-day="1" data-n="'+esc(s.name)+'">Next day ›</button></div><input class="act" data-t="'+ti+'" data-j="'+j+'" value="'+esc(s.act)+'" aria-label="Activity for '+esc(s.name)+'" placeholder="Activity"></div>';
       });
       h+=moveBtn(ti)+'</div>';
     });
@@ -555,7 +576,7 @@ textarea.fallback{width:100%;min-height:140px;border:1px solid var(--line);borde
     var s=plan[+inp.dataset.t].sites[+inp.dataset.j];s.act=inp.value;persist();
     var i=siteIdx(s.name);if(i>=0){allSites[i].a=inp.value;save('ds_sites3',allSites)}
   });
-  $('assign').addEventListener('click',autoAssign);
+  $('assign').addEventListener('click',startManual);
 
   function text(){
     var out='GSSC DUTY SCHEDULE\n'+docDate()+' | '+weekday()+'\n';
